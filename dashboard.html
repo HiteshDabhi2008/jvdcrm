@@ -1,124 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard – Jivdaya Vatsalya Dham CRM</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"
-    onerror="this.onerror=null;this.href='style.css';" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.href='style.css';"/>
 </head>
-
 <body>
 
-  <!-- ════ NAVBAR (Unified across all pages) ════ -->
-  <nav class="navbar">
-    <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
-      <div class="nav-logo">
-        <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}"
-          onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo" />
-      </div>
-      <span class="nav-name">
-        Jivdaya Vatsalya Dham
-        <small>Edufun Foundation Trust</small>
-      </span>
-    </a>
-    <div class="nav-links">
-      <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
-      <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}"
-        class="nav-link active">Dashboard</a>
-      {% if current_user %}
+<!-- ════ NAVBAR (Unified) ════ -->
+<nav class="navbar">
+  <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
+    <div class="nav-logo">
+      <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
+    </div>
+    <span class="nav-name">
+      Jivdaya Vatsalya Dham
+      <small>Edufun Foundation Trust</small>
+    </span>
+  </a>
+
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" onclick="document.getElementById('navLinks').classList.toggle('open')">☰</button>
+
+  <div class="nav-links" id="navLinks">
+    <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
+    <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link active">Dashboard</a>
+    {% if current_user %}
       <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="nav-link">Case Entry</a>
-      {% if current_user.role == 'head' %}
       <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
+      {% if current_user.role == 'head' %}
+        <a href="{{ url_for('admin') if url_for is defined else '/admin' }}" class="nav-link">Admin</a>
       {% endif %}
-      <span class="user-badge">
+      <a href="{{ url_for('profile') if url_for is defined else '/profile' }}" class="user-badge" style="text-decoration:none;">
         👤 {{ current_user.full_name }}
         <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}">
           {{ current_user.role }}
         </span>
-      </span>
-      <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}"
-        class="btn btn-outline btn-sm">Logout</a>
-      {% else %}
+      </a>
+      <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">Logout</a>
+    {% else %}
       <div class="nav-auth">
-        <a href="{{ url_for('login') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">🔑
-          Login</a>
-        <a href="{{ url_for('register') if url_for is defined else 'register.html' }}" class="btn btn-primary btn-sm">📝
-          Register</a>
+        <a href="{{ url_for('login') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">🔑 Staff Login</a>
+        <a href="{{ url_for('register') if url_for is defined else 'register.html' }}" class="btn btn-primary btn-sm">📝 Register</a>
       </div>
-      {% endif %}
-    </div>
-  </nav>
-
-  <!-- Flash messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-  <div class="flash-wrap">
-    {% for cat, msg in messages %}
-    <div class="flash flash-{{ 'error' if cat == 'error' else 'success' }}">{{ msg }}</div>
-    {% endfor %}
+    {% endif %}
   </div>
-  {% endif %}
-  {% endwith %}
+</nav>
 
-  <!-- ════ DASHBOARD HERO ════ -->
-  <div class="dash-hero">
-    <h1>Welcome to Jivdaya Vatsalya Dham</h1>
-    <p>Veterinary Care &amp; Animal Case Management System</p>
-    {% if current_user %}
-    <div style="margin-top:14px;">
-      <span class="user-badge" style="background:rgba(255,255,255,.16);padding:6px 18px;font-size:.88rem;">
-        👋 Logged in as &nbsp;<strong>{{ current_user.full_name }}</strong>&nbsp;
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-wrap">
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ 'error' if cat == 'error' else 'success' }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ════ DASHBOARD HERO ════ -->
+<div class="dash-hero">
+  <h1>Welcome to Jivdaya Vatsalya Dham</h1>
+  <p>Veterinary Care &amp; Animal Rescue Management System • 24/7 Clinical Records</p>
+  {% if current_user %}
+    <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;">
+      <span class="user-badge" style="background:rgba(255,255,255,.18);padding:6px 18px;font-size:.88rem;border:1px solid rgba(255,255,255,0.25);">
+        👋 Signed in as &nbsp;<strong>{{ current_user.full_name }}</strong>&nbsp;
         <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}">
           {{ '👑 Head Administrator' if current_user.role == 'head' else '👷 Care Employee' }}
         </span>
       </span>
+      <span style="font-size:0.82rem;color:rgba(255,255,255,0.85);background:rgba(0,0,0,0.2);padding:4px 10px;border-radius:20px;">
+        Database Status: <strong style="color:#a7f3d0;">● Live Connected</strong>
+      </span>
     </div>
-    {% endif %}
-  </div>
+  {% endif %}
+</div>
 
-  <!-- ════ DASHBOARD CONTENT ════ -->
-  <div class="dash-container">
+<!-- ════ DASHBOARD MAIN CONTAINER ════ -->
+<div class="dash-container">
 
-    {% if not current_user %}
-    <!-- Locked state for unauthenticated users -->
+  {% if not current_user %}
+    <!-- Locked state for unauthenticated visitors -->
     <div class="dash-locked-msg">
       <div style="font-size:3.5rem;margin-bottom:12px;">🔒</div>
-      <h3>Authentication Required</h3>
-      <p>Please sign in with your authorized staff credentials or your organization Google account
-        (<strong>@edufunfoundation.in</strong>) to access the veterinary CRM workspace.</p>
+      <h3>Staff Authentication Required</h3>
+      <p>
+        Please sign in with your authorized staff credentials or your organization Google Workspace account
+        (<strong>@{{ allowed_domain or 'edufunfoundation.in' }}</strong>) to access the veterinary CRM workspace and case records.
+      </p>
       <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-        <a href="{{ url_for('login') if url_for is defined else 'login.html' }}" class="btn btn-primary btn-lg">🔑 Staff
-          Sign In</a>
-        <a href="{{ url_for('register') if url_for is defined else 'register.html' }}" class="btn btn-ghost btn-lg">📝
-          Create Account</a>
+        <a href="{{ url_for('login') if url_for is defined else 'login.html' }}" class="btn btn-primary btn-lg">🔑 Staff Sign In</a>
+        <a href="{{ url_for('register') if url_for is defined else 'register.html' }}" class="btn btn-ghost btn-lg">📝 Create Staff Account</a>
       </div>
     </div>
 
-    {% else %}
+  {% else %}
 
-    <!-- ── 1. Statistics Cards ── -->
+    <!-- ── 1. Comprehensive Veterinary Statistics Grid ── -->
     <section aria-label="Veterinary Statistics">
-      <div class="stats-grid">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:1.15rem;font-weight:800;color:var(--green-950);margin:0;display:flex;align-items:center;gap:8px;">
+          📊 Real-Time Clinical Breakdown
+        </h2>
+        <span style="font-size:0.82rem;color:var(--text-400);" id="statsLastUpdated">Updating...</span>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));">
         <!-- Total Cases -->
         <div class="stat-card stat-total">
           <div class="stat-header">
-            <span class="stat-label">Total Cases</span>
+            <span class="stat-label">Total Rescues</span>
             <div class="stat-icon">🐾</div>
           </div>
-          <div class="stat-value" id="statTotal">--</div>
-          <div class="stat-sub">All registered rescues</div>
+          <div class="stat-value" id="statTotal">...</div>
+          <div class="stat-sub">All registered cases</div>
         </div>
 
         <!-- Under Treatment -->
         <div class="stat-card stat-treatment">
           <div class="stat-header">
-            <span class="stat-label">Treatment</span>
+            <span class="stat-label">Under Treatment</span>
             <div class="stat-icon">🏥</div>
           </div>
-          <div class="stat-value" id="statTreatment">--</div>
-          <div class="stat-sub">Active hospital care</div>
+          <div class="stat-value" id="statUnderTreatment">...</div>
+          <div class="stat-sub">Active hospital triage</div>
+        </div>
+
+        <!-- Site Treatment -->
+        <div class="stat-card" style="border-left:4px solid var(--status-site-text);background:var(--bg-card);">
+          <div class="stat-header">
+            <span class="stat-label" style="color:var(--status-site-text);">Site Treatment</span>
+            <div class="stat-icon">🚑</div>
+          </div>
+          <div class="stat-value" id="statSiteTreatment">...</div>
+          <div class="stat-sub">Treated at rescue site</div>
+        </div>
+
+        <!-- JVD Treatment -->
+        <div class="stat-card" style="border-left:4px solid var(--status-jvd-text);background:var(--bg-card);">
+          <div class="stat-header">
+            <span class="stat-label" style="color:var(--status-jvd-text);">JVD Treatment</span>
+            <div class="stat-icon">🏨</div>
+          </div>
+          <div class="stat-value" id="statJvdTreatment">...</div>
+          <div class="stat-sub">Admitted in JVD ward</div>
         </div>
 
         <!-- Released -->
@@ -127,18 +153,18 @@
             <span class="stat-label">Released</span>
             <div class="stat-icon">🕊️</div>
           </div>
-          <div class="stat-value" id="statReleased">--</div>
-          <div class="stat-sub">Rehabilitated &amp; freed</div>
+          <div class="stat-value" id="statReleased">...</div>
+          <div class="stat-sub">Healed &amp; freed</div>
         </div>
 
         <!-- Death -->
         <div class="stat-card stat-death">
           <div class="stat-header">
-            <span class="stat-label">Death</span>
+            <span class="stat-label">Casualties</span>
             <div class="stat-icon">🥀</div>
           </div>
-          <div class="stat-value" id="statDeath">--</div>
-          <div class="stat-sub">Critical casualties</div>
+          <div class="stat-value" id="statDeath">...</div>
+          <div class="stat-sub">Fatal injuries / illnesses</div>
         </div>
 
         <!-- Run Away -->
@@ -147,125 +173,209 @@
             <span class="stat-label">Run Away</span>
             <div class="stat-icon">🏃</div>
           </div>
-          <div class="stat-value" id="statRunAway">--</div>
+          <div class="stat-value" id="statRunAway">...</div>
           <div class="stat-sub">Escaped / untraceable</div>
+        </div>
+
+        <!-- Classification Ratio -->
+        <div class="stat-card" style="border-left:4px solid var(--amber-500);background:var(--bg-card);">
+          <div class="stat-header">
+            <span class="stat-label">Domestic / Wild</span>
+            <div class="stat-icon">🐶🦌</div>
+          </div>
+          <div class="stat-value" style="font-size:1.4rem;" id="statRatio">...</div>
+          <div class="stat-sub">Animal type distribution</div>
         </div>
       </div>
     </section>
 
-    <!-- ── 2. Main Action Cards ── -->
-    <section aria-label="Core CRM Actions">
+    <!-- ── 2. Quick Actions & Primary Workflows ── -->
+    <section aria-label="Core Workflows" style="margin-top:28px;">
       <div class="dash-actions-grid">
-        <!-- Action 1: Case Entry -->
+        <!-- Action 1: New Case Entry -->
         <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="dash-card card-entry">
           <div class="dash-card-icon-wrap">📋</div>
-          <h3>Case Entry</h3>
-          <p>Register a new rescue case with caller details, animal species, medical incident, and assigned status — or
-            update an existing case by registration number.</p>
-          <span class="btn btn-green btn-card-action">Register / Edit Case →</span>
+          <h3>New Case Entry</h3>
+          <p>
+            Log a new emergency rescue with caller details, village, GPS/address, animal species, medical incident, and assigned status. Unique Registration Number generated automatically.
+          </p>
+          <span class="btn btn-green btn-card-action">Register Animal Case →</span>
         </a>
 
         <!-- Action 2: View Records -->
-        {% if current_user.role == 'head' %}
         <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="dash-card card-records">
           <div class="dash-card-icon-wrap">📊</div>
-          <h3>View Records</h3>
-          <p>Access full case records database. Filter by date range, animal type, and clinical status. Print medical
-            forms and export to Excel sheet or PDF reports.</p>
-          <span class="btn btn-primary btn-card-action">Manage &amp; Export Records →</span>
+          <h3>View &amp; Search Records</h3>
+          <p>
+            Filter medical records by date range, animal classification, species, and status. Inspect full clinical details, update statuses, or print hospital medical sheets.
+          </p>
+          <span class="btn btn-primary btn-card-action">Browse Case Database →</span>
         </a>
-        {% else %}
-        <div class="dash-card locked">
-          <div class="dash-card-icon-wrap" style="background:#e2e8f0;">🔒</div>
-          <h3>View Records</h3>
-          <p>Full case records database, advanced date filtering, and spreadsheet/PDF exports are restricted to Head
-            Administrators.</p>
-          <span class="btn btn-ghost btn-card-action" style="cursor:not-allowed;">🔒 Head Access Only</span>
-        </div>
+
+        <!-- Action 3: Head Administration (if authorized) -->
+        {% if current_user.role == 'head' %}
+        <a href="{{ url_for('admin') if url_for is defined else '/admin' }}" class="dash-card" style="border-top:4px solid var(--amber-500);">
+          <div class="dash-card-icon-wrap" style="background:var(--amber-100);color:var(--amber-800);">🛡️</div>
+          <h3>Administration &amp; Audit</h3>
+          <p>
+            Manage staff accounts, assign authorization privileges, activate or suspend users, export database sheets, and inspect complete security audit trails.
+          </p>
+          <span class="btn btn-blue btn-card-action">Head Administration Portal →</span>
+        </a>
         {% endif %}
       </div>
     </section>
 
-    <!-- ── 3. Quick Overview / Recent Activity ── -->
-    <section class="recent-activity-card">
-      <div class="recent-activity-header">
-        <h3>📋 Veterinary Center Information</h3>
-        <span style="font-size:.82rem;color:var(--text-400);">Operating 24/7 Helpline</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;padding:8px 0;">
-        <div
-          style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;">
-          <h4 style="font-size:.9rem;font-weight:700;color:var(--green-900);margin-bottom:6px;">🚑 Emergency Protocols
-          </h4>
-          <p style="font-size:.84rem;color:var(--text-500);line-height:1.6;">Always verify caller contact number and
-            area details before dispatch. For wild animals, ensure safety protocol and district forest officer
-            notification if required.</p>
+    <!-- ── 3. Recent Cases Live Table ── -->
+    <section style="margin-top:32px;">
+      <div class="card" style="padding:0;overflow:hidden;border:1px solid var(--border);">
+        <div style="padding:18px 24px;background:var(--bg-subtle);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h3 style="font-size:1.1rem;font-weight:800;color:var(--green-950);margin:0;">
+              📋 Recent Rescues &amp; Admissions
+            </h3>
+            <span style="font-size:0.82rem;color:var(--text-500);">Latest registered cases in the veterinary database</span>
+          </div>
+          <a href="{{ url_for('view_records') }}" class="btn btn-outline btn-sm">View All Cases →</a>
         </div>
-        <div
-          style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;">
-          <h4 style="font-size:.9rem;font-weight:700;color:var(--green-900);margin-bottom:6px;">🆔 Auto Registration
-          </h4>
-          <p style="font-size:.84rem;color:var(--text-500);line-height:1.6;">Case registration numbers are generated
-            automatically in strict annual sequence (e.g. <code>JVD.2026.0001</code>). Case sheets can be printed
-            immediately upon saving.</p>
-        </div>
-        <div
-          style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;">
-          <h4 style="font-size:.9rem;font-weight:700;color:var(--green-900);margin-bottom:6px;">📄 Official Exports</h4>
-          <p style="font-size:.84rem;color:var(--text-500);line-height:1.6;">Head accounts can filter case histories by
-            date range or animal species and export formatted spreadsheets or formal clinical audit PDFs.</p>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Reg. No.</th>
+                <th>Caller Name</th>
+                <th>Contact</th>
+                <th>Animal Type</th>
+                <th>Species</th>
+                <th>Status</th>
+                <th>Registered Date</th>
+                <th style="text-align:center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="recentCasesBody">
+              <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-400);">⏳ Loading recent case records...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
 
-    {% endif %}
+    <!-- ── 4. Clinical Emergency Guidelines ── -->
+    <section class="recent-activity-card" style="margin-top:28px;">
+      <div class="recent-activity-header">
+        <h3>🚨 Emergency Protocols &amp; Center Information</h3>
+        <span style="font-size:.82rem;color:var(--text-400);">JVD Hospital Samarvada</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;padding:8px 0;">
+        <div style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;">
+          <h4 style="font-size:.9rem;font-weight:700;color:var(--green-900);margin-bottom:6px;">🚑 Triage Coordination</h4>
+          <p style="font-size:.84rem;color:var(--text-500);line-height:1.6;">
+            Always confirm caller location and contact number before dispatching the rescue ambulance. For wildlife (Nilgai, Leopard, Monkey), adhere to forest safety protocols and notify range officers if required.
+          </p>
+        </div>
+        <div style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;">
+          <h4 style="font-size:.9rem;font-weight:700;color:var(--green-900);margin-bottom:6px;">🆔 Safe Sequence Numbering</h4>
+          <p style="font-size:.84rem;color:var(--text-500);line-height:1.6;">
+            Registration numbers are generated atomically in sequence (<code>JVD-YYYY-0001</code>). Concurrency safety guarantees duplicate numbers cannot be assigned even during simultaneous multi-staff submissions.
+          </p>
+        </div>
+        <div style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;">
+          <h4 style="font-size:.9rem;font-weight:700;color:var(--green-900);margin-bottom:6px;">📄 Official Exports &amp; Audit</h4>
+          <p style="font-size:.84rem;color:var(--text-500);line-height:1.6;">
+            Head administrators can generate clean Excel workbooks and landscape PDF clinical reports. All critical mutations, status changes, and logins are recorded in immutable audit logs.
+          </p>
+        </div>
+      </div>
+    </section>
 
-  </div>
+  {% endif %}
 
-  <!-- ════ STATUS BAR (Unified across all pages) ════ -->
-  <footer class="status-bar">
-    <div class="sb-item">📧 info@edufunfoundation.in</div>
-    <div class="sb-div">|</div>
-    <div class="sb-item">📞 97272-97187</div>
-    <div class="sb-div">|</div>
-    <div class="sb-item">🌐 edufunfoundation.in</div>
-    <div class="sb-div">|</div>
-    <div class="sb-item">🕐 24/7 Emergency Helpline</div>
-  </footer>
+</div>
 
-  <script>
-    // Live statistics loader: checks /api/cases if head user, otherwise displays clean ready indicator
-    document.addEventListener('DOMContentLoaded', () => {
-      const isHead = "{{ 'true' if (current_user and current_user.role == 'head') else 'false' }}" === 'true';
-      if (isHead) {
-        fetch("{{ url_for('api_cases') if url_for is defined else '/api/cases' }}")
-          .then(res => res.ok ? res.json() : null)
-          .then(data => {
-            if (data && Array.isArray(data.cases)) {
-              const cases = data.cases;
-              document.getElementById('statTotal').textContent = cases.length;
+<!-- ════ STATUS BAR ════ -->
+<footer class="status-bar">
+  <div class="sb-item">📧 info@edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">📞 97272-97187</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🌐 edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🕐 24/7 Emergency Helpline</div>
+</footer>
 
-              let under = 0, rel = 0, death = 0, run = 0;
-              cases.forEach(c => {
-                const st = (c.status || '').toLowerCase();
-                if (st.includes('treatment')) under++;
-                else if (st.includes('release')) rel++;
-                else if (st.includes('death')) death++;
-                else if (st.includes('run away')) run++;
-              });
-              document.getElementById('statTreatment').textContent = under;
-              document.getElementById('statReleased').textContent = rel;
-              document.getElementById('statDeath').textContent = death;
-              document.getElementById('statRunAway').textContent = run;
-            }
-          })
-          .catch(() => {
-            // Fallback: keep standard placeholder
-          });
+<script>
+// Helper for Status Badge styling
+function getStatusBadge(s) {
+  const clean = (s || '').trim();
+  let cls = 's-run';
+  if (clean === 'Under Treatment') cls = 's-under';
+  else if (clean === 'Site Treatment') cls = 's-site';
+  else if (clean === 'JVD Treatment') cls = 's-jvd';
+  else if (clean === 'Release') cls = 's-release';
+  else if (clean === 'Death') cls = 's-death';
+  return `<span class="s-pill ${cls}">${clean || 'Unknown'}</span>`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const isAuth = "{{ 'true' if current_user else 'false' }}" === 'true';
+  if (!isAuth) return;
+
+  fetch('/api/dashboard/stats')
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.success && data.stats) {
+        const s = data.stats;
+        document.getElementById('statTotal').textContent = s.total;
+        document.getElementById('statUnderTreatment').textContent = s.under_treatment;
+        document.getElementById('statSiteTreatment').textContent = s.site_treatment;
+        document.getElementById('statJvdTreatment').textContent = s.jvd_treatment;
+        document.getElementById('statReleased').textContent = s.released;
+        document.getElementById('statDeath').textContent = s.death;
+        document.getElementById('statRunAway').textContent = s.run_away;
+        document.getElementById('statRatio').textContent = `${s.domestic} / ${s.wild}`;
+        document.getElementById('statsLastUpdated').textContent = `Updated: ${new Date().toLocaleTimeString('en-IN')}`;
+
+        // Render Recent Cases Table
+        const tbody = document.getElementById('recentCasesBody');
+        if (data.recentCases && data.recentCases.length > 0) {
+          tbody.innerHTML = data.recentCases.map(c => `
+            <tr>
+              <td><code>${escapeHtml(c.reg_no)}</code></td>
+              <td><strong>${escapeHtml(c.caller_name)}</strong></td>
+              <td>${escapeHtml(c.contact_no)}</td>
+              <td>${escapeHtml(c.animal_type)}</td>
+              <td>${escapeHtml(c.species)}</td>
+              <td>${getStatusBadge(c.status)}</td>
+              <td style="font-size:0.82rem;color:var(--text-500);white-space:nowrap;">
+                ${c.post_time ? c.post_time.slice(0, 10) : '–'}
+              </td>
+              <td style="text-align:center;white-space:nowrap;">
+                <a href="/entry?reg_no=${encodeURIComponent(c.reg_no)}" class="act act-edit" title="Edit Case">✏️ Edit</a>
+                <a href="/print/${encodeURIComponent(c.reg_no)}" target="_blank" class="act act-print" title="Print Sheet">🖨 Print</a>
+              </td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-400);">🐾 No veterinary rescue cases registered yet. Click "New Case Entry" above to add the first case!</td></tr>';
+        }
       }
+    })
+    .catch(err => {
+      console.error('Error fetching dashboard stats:', err);
     });
-  </script>
+});
+</script>
 
 </body>
-
 </html>

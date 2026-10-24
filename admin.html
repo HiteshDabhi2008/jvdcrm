@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Administration Portal – Jivdaya Vatsalya Dham CRM</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.href='style.css';"/>
+</head>
+<body>
+
+<!-- ════ NAVBAR (Unified) ════ -->
+<nav class="navbar">
+  <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
+    <div class="nav-logo">
+      <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
+    </div>
+    <span class="nav-name">
+      Jivdaya Vatsalya Dham
+      <small>Edufun Foundation Trust</small>
+    </span>
+  </a>
+
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" onclick="document.getElementById('navLinks').classList.toggle('open')">☰</button>
+
+  <div class="nav-links" id="navLinks">
+    <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
+    <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link">Dashboard</a>
+    <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="nav-link">Case Entry</a>
+    <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
+    <a href="{{ url_for('admin') if url_for is defined else '/admin' }}" class="nav-link active">Admin</a>
+    {% if current_user %}
+      <a href="{{ url_for('profile') if url_for is defined else '/profile' }}" class="user-badge" style="text-decoration:none;">
+        👤 {{ current_user.full_name }}
+        <span class="role-pill role-head">head</span>
+      </a>
+      <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">Logout</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-wrap">
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ 'error' if cat == 'error' else 'success' }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ════ ADMIN CONTAINER ════ -->
+<div class="view-wrap" style="max-width:1200px;margin:0 auto;padding:32px 24px;">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
+    <div>
+      <h2 style="font-size:1.75rem;font-weight:800;color:var(--green-950);letter-spacing:-0.02em;">
+        🛡️ Head Administration Portal
+      </h2>
+      <p style="color:var(--text-500);font-size:.92rem;margin-top:4px;">
+        Manage staff access, assign authorization roles, monitor security events, and inspect system audit trails.
+      </p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-ghost btn-sm">← Back to Dashboard</a>
+      <button class="btn btn-primary btn-sm" onclick="refreshActiveTab()">🔄 Refresh Data</button>
+    </div>
+  </div>
+
+  <!-- Admin Navigation Tabs -->
+  <div class="admin-tabs">
+    <button class="admin-tab active" id="tabUsersBtn" onclick="switchAdminTab('users')">👥 Staff Management</button>
+    <button class="admin-tab" id="tabAuditBtn" onclick="switchAdminTab('audit')">📜 System Audit Logs</button>
+  </div>
+
+  <!-- ── 1. STAFF USER MANAGEMENT TAB ── -->
+  <div id="tabUsersSection">
+    <div class="card" style="padding:0;overflow:hidden;border:1px solid var(--border);">
+      <div style="padding:16px 20px;background:var(--bg-subtle);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="font-size:1.05rem;font-weight:700;color:var(--green-900);margin:0;">Registered Staff Accounts</h3>
+        <span style="font-size:0.85rem;color:var(--text-500);" id="userCountText">Loading accounts...</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="usersTable">
+          <thead>
+            <tr>
+              <th>Staff Name</th>
+              <th>Username</th>
+              <th>Official Email</th>
+              <th>Assigned Role</th>
+              <th>Status</th>
+              <th>Account Type</th>
+              <th style="text-align:center;">Admin Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-400);">⏳ Loading staff directory...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. AUDIT LOGS TAB ── -->
+  <div id="tabAuditSection" class="hidden">
+    <div class="filter-card" style="margin-bottom:20px;">
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label" for="auditActionFilter">Filter by Action Type</label>
+          <select class="form-control" id="auditActionFilter" onchange="loadAuditLogs(1)">
+            <option value="">All Actions (Comprehensive Audit)</option>
+            <option value="CASE_CREATE">CASE_CREATE — New Case Registered</option>
+            <option value="CASE_UPDATE">CASE_UPDATE — Case Details Edited</option>
+            <option value="CASE_STATUS_CHANGE">CASE_STATUS_CHANGE — Medical Status Updated</option>
+            <option value="CASE_ARCHIVE">CASE_ARCHIVE — Case Archived</option>
+            <option value="CASE_RESTORE">CASE_RESTORE — Case Restored</option>
+            <option value="EXPORT_EXCEL">EXPORT_EXCEL — Excel Spreadsheet Export</option>
+            <option value="EXPORT_PDF">EXPORT_PDF — Clinical PDF Report Export</option>
+            <option value="USER_ROLE_CHANGE">USER_ROLE_CHANGE — Role Reassigned</option>
+            <option value="USER_STATUS_CHANGE">USER_STATUS_CHANGE — Account Status Changed</option>
+            <option value="LOGIN">LOGIN — User Sign In</option>
+            <option value="LOGOUT">LOGOUT — User Sign Out</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;border:1px solid var(--border);">
+      <div style="padding:16px 20px;background:var(--bg-subtle);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="font-size:1.05rem;font-weight:700;color:var(--green-900);margin:0;">System Audit Log Trail</h3>
+        <span style="font-size:0.85rem;color:var(--text-500);" id="auditCountText">Loading audit records...</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="auditTable">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Action</th>
+              <th>Acting User</th>
+              <th>Role</th>
+              <th>Target Type &amp; ID</th>
+              <th>IP Address</th>
+              <th>Action Details</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody">
+            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-400);">⏳ Loading audit trail...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination for Audit Logs -->
+      <div class="pagination-wrap" id="auditPaginationWrap">
+        <div id="auditPageInfo" style="font-size:0.88rem;color:var(--text-600);font-weight:600;">Page 1 of 1</div>
+        <div class="pagination-controls">
+          <button class="page-btn" id="auditPrevBtn" onclick="prevAuditPage()">← Previous</button>
+          <button class="page-btn" id="auditNextBtn" onclick="nextAuditPage()">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════ STATUS BAR ════ -->
+<footer class="status-bar">
+  <div class="sb-item">📧 info@edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">📞 97272-97187</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🌐 edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🕐 24/7 Emergency Helpline</div>
+</footer>
+
+<script>
+let currentAdminTab = 'users';
+let currentAuditPage = 1;
+let totalAuditPages = 1;
+
+function switchAdminTab(tab) {
+  currentAdminTab = tab;
+  document.getElementById('tabUsersBtn').classList.toggle('active', tab === 'users');
+  document.getElementById('tabAuditBtn').classList.toggle('active', tab === 'audit');
+  document.getElementById('tabUsersSection').classList.toggle('hidden', tab !== 'users');
+  document.getElementById('tabAuditSection').classList.toggle('hidden', tab !== 'audit');
+
+  if (tab === 'users') {
+    loadUsers();
+  } else {
+    loadAuditLogs(1);
+  }
+}
+
+function refreshActiveTab() {
+  if (currentAdminTab === 'users') {
+    loadUsers();
+  } else {
+    loadAuditLogs(currentAuditPage);
+  }
+}
+
+// ── Load Staff Users ──
+function loadUsers() {
+  fetch('/api/users')
+    .then(r => r.json())
+    .then(data => {
+      const tbody = document.getElementById('usersTableBody');
+      const countText = document.getElementById('userCountText');
+      if (!data.success || !data.users || data.users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-500);">No registered accounts found.</td></tr>';
+        countText.textContent = '0 accounts';
+        return;
+      }
+      countText.textContent = `${data.users.length} staff account(s) registered`;
+      tbody.innerHTML = data.users.map(u => {
+        const isSelf = u._id === '{{ current_user._id if current_user else "" }}';
+        const rolePill = u.role === 'head' 
+          ? '<span class="role-pill role-head">👑 Head Admin</span>' 
+          : '<span class="role-pill role-employee">👷 Care Employee</span>';
+        const statusPill = u.status === 'blocked'
+          ? '<span class="status-pill-blocked">⛔ Blocked</span>'
+          : '<span class="status-pill-active">● Active</span>';
+        const authType = u.googleId ? '🔒 Google Workspace' : '🔑 Internal Password';
+
+        return `
+          <tr>
+            <td><strong>${escapeHtml(u.full_name)}</strong> ${isSelf ? '<small style="color:var(--amber-600);">(You)</small>' : ''}</td>
+            <td><code>${escapeHtml(u.username)}</code></td>
+            <td>${escapeHtml(u.email || '–')}</td>
+            <td>${rolePill}</td>
+            <td>${statusPill}</td>
+            <td style="font-size:0.82rem;color:var(--text-500);">${authType}</td>
+            <td style="text-align:center;white-space:nowrap;">
+              <select onchange="updateRole('${u._id}', this.value)" style="font-size:0.8rem;padding:3px 6px;border-radius:4px;border:1px solid var(--border);" ${isSelf ? 'title="Cannot modify own role"' : ''}>
+                <option value="employee" ${u.role === 'employee' ? 'selected' : ''}>Role: Employee</option>
+                <option value="head" ${u.role === 'head' ? 'selected' : ''}>Role: Head</option>
+              </select>
+              <button onclick="toggleStatus('${u._id}', '${u.status === 'blocked' ? 'active' : 'blocked'}')" 
+                      class="btn btn-sm ${u.status === 'blocked' ? 'btn-green' : 'btn-outline'}" 
+                      style="margin-left:6px;font-size:0.78rem;padding:4px 8px;"
+                      ${isSelf ? 'disabled title="Cannot block yourself"' : ''}>
+                ${u.status === 'blocked' ? 'Activate' : 'Block'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    })
+    .catch(err => {
+      document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--red);">⚠️ Failed to load staff directory.</td></tr>';
+    });
+}
+
+function updateRole(userId, newRole) {
+  if (!confirm(`Are you sure you want to change this staff member's role to ${newRole.toUpperCase()}?`)) {
+    loadUsers();
+    return;
+  }
+  fetch(`/api/users/${userId}/role`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: newRole })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+    } else {
+      alert('Error: ' + data.error);
+    }
+    loadUsers();
+  })
+  .catch(() => {
+    alert('Server error updating role.');
+    loadUsers();
+  });
+}
+
+function toggleStatus(userId, newStatus) {
+  const actionName = newStatus === 'blocked' ? 'BLOCK' : 'ACTIVATE';
+  if (!confirm(`Are you sure you want to ${actionName} this user account?`)) {
+    return;
+  }
+  fetch(`/api/users/${userId}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+    } else {
+      alert('Error: ' + data.error);
+    }
+    loadUsers();
+  })
+  .catch(() => {
+    alert('Server error updating user status.');
+    loadUsers();
+  });
+}
+
+// ── Load Audit Logs ──
+function loadAuditLogs(page = 1) {
+  currentAuditPage = page;
+  const actionFilter = document.getElementById('auditActionFilter').value;
+  const params = new URLSearchParams({ page, limit: 25 });
+  if (actionFilter) params.append('action', actionFilter);
+
+  fetch(`/api/audit-logs?${params.toString()}`)
+    .then(r => r.json())
+    .then(data => {
+      const tbody = document.getElementById('auditTableBody');
+      const countText = document.getElementById('auditCountText');
+      if (!data.success || !data.logs || data.logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-500);">No audit log events found matching criteria.</td></tr>';
+        countText.textContent = '0 events';
+        document.getElementById('auditPrevBtn').disabled = true;
+        document.getElementById('auditNextBtn').disabled = true;
+        return;
+      }
+      countText.textContent = `${data.total} total event(s) recorded`;
+      totalAuditPages = data.totalPages;
+      document.getElementById('auditPageInfo').textContent = `Page ${data.page} of ${data.totalPages}`;
+      document.getElementById('auditPrevBtn').disabled = data.page <= 1;
+      document.getElementById('auditNextBtn').disabled = data.page >= data.totalPages;
+
+      tbody.innerHTML = data.logs.map(l => {
+        const dateStr = new Date(l.timestamp).toLocaleString('en-IN');
+        let badgeClass = 's-run';
+        if (l.action.includes('CREATE')) badgeClass = 's-jvd';
+        else if (l.action.includes('UPDATE')) badgeClass = 's-under';
+        else if (l.action.includes('ARCHIVE')) badgeClass = 's-death';
+        else if (l.action.includes('EXPORT')) badgeClass = 's-site';
+
+        const detailsStr = l.details ? JSON.stringify(l.details) : '–';
+
+        return `
+          <tr>
+            <td style="white-space:nowrap;font-size:0.82rem;color:var(--text-500);">${dateStr}</td>
+            <td><span class="s-pill ${badgeClass}" style="font-size:0.75rem;">${escapeHtml(l.action)}</span></td>
+            <td><strong>${escapeHtml(l.user_name)}</strong></td>
+            <td><span class="role-pill ${l.user_role === 'head' ? 'role-head' : 'role-employee'}">${l.user_role}</span></td>
+            <td><code>${escapeHtml(l.target_type)}: ${escapeHtml(l.target_id || '')}</code></td>
+            <td style="font-size:0.8rem;color:var(--text-500);">${escapeHtml(l.ip_address || '–')}</td>
+            <td style="font-size:0.8rem;color:var(--text-700);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(detailsStr)}">
+              ${escapeHtml(detailsStr)}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    })
+    .catch(() => {
+      document.getElementById('auditTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--red);">⚠️ Failed to load audit trail.</td></tr>';
+    });
+}
+
+function prevAuditPage() {
+  if (currentAuditPage > 1) loadAuditLogs(currentAuditPage - 1);
+}
+function nextAuditPage() {
+  if (currentAuditPage < totalAuditPages) loadAuditLogs(currentAuditPage + 1);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadUsers();
+});
+</script>
+
+</body>
+</html>

@@ -19,14 +19,24 @@
       <small>Edufun Foundation Trust</small>
     </span>
   </a>
-  <div class="nav-links">
+
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" onclick="document.getElementById('navLinks').classList.toggle('open')">☰</button>
+
+  <div class="nav-links" id="navLinks">
     <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
     <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link">Dashboard</a>
     <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="nav-link">Case Entry</a>
+    <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
     {% if current_user and current_user.role == 'head' %}
-      <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
+      <a href="{{ url_for('admin') if url_for is defined else '/admin' }}" class="nav-link">Admin</a>
     {% endif %}
     {% if current_user %}
+      <a href="{{ url_for('profile') if url_for is defined else '/profile' }}" class="user-badge" style="text-decoration:none;">
+        👤 {{ current_user.full_name }}
+        <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}">
+          {{ current_user.role }}
+        </span>
+      </a>
       <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">Logout</a>
     {% endif %}
   </div>

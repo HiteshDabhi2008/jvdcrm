@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>View Case Records – Jivdaya Vatsalya Dham CRM</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.href='style.css';"/>
+  <!-- Client-side export fallback libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
-<!-- ════ NAVBAR (Unified across all pages) ════ -->
+<!-- ════ NAVBAR (Unified) ════ -->
 <nav class="navbar">
   <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
     <div class="nav-logo">
@@ -22,16 +23,24 @@
       <small>Edufun Foundation Trust</small>
     </span>
   </a>
-  <div class="nav-links">
+
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" onclick="document.getElementById('navLinks').classList.toggle('open')">☰</button>
+
+  <div class="nav-links" id="navLinks">
     <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
     <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link">Dashboard</a>
     <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="nav-link">Case Entry</a>
     <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link active">View Records</a>
+    {% if current_user and current_user.role == 'head' %}
+      <a href="{{ url_for('admin') if url_for is defined else '/admin' }}" class="nav-link">Admin</a>
+    {% endif %}
     {% if current_user %}
-      <span class="user-badge">
+      <a href="{{ url_for('profile') if url_for is defined else '/profile' }}" class="user-badge" style="text-decoration:none;">
         👤 {{ current_user.full_name }}
-        <span class="role-pill role-head">head</span>
-      </span>
+        <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}">
+          {{ current_user.role }}
+        </span>
+      </a>
       <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">Logout</a>
     {% endif %}
   </div>
@@ -51,26 +60,35 @@
 <!-- ════ VIEW RECORDS WRAPPER ════ -->
 <div class="view-wrap">
 
-  <div style="margin-bottom:24px;">
-    <h2 style="font-size:1.75rem;font-weight:800;color:var(--green-950);letter-spacing:-0.02em;">📊 Veterinary Case Records</h2>
-    <p style="color:var(--text-500);font-size:.92rem;margin-top:4px;">
-      Search, filter, and manage JVD animal case records. Export matching data as Excel spreadsheet or clinical PDF reports.
-    </p>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
+    <div>
+      <h2 style="font-size:1.75rem;font-weight:800;color:var(--green-950);letter-spacing:-0.02em;">
+        📊 Veterinary Case Records
+      </h2>
+      <p style="color:var(--text-500);font-size:.92rem;margin-top:4px;">
+        Search, filter, update, and inspect JVD clinical animal cases with real-time database queries.
+      </p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <a href="{{ url_for('entry') }}" class="btn btn-green btn-sm">➕ New Case Entry</a>
+    </div>
   </div>
 
   <!-- ── SEARCH & FILTER PANEL ── -->
   <div class="filter-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;border-bottom:1px solid var(--border-light);padding-bottom:12px;">
       <h3 style="color:var(--green-900);font-size:1.05rem;font-weight:800;display:flex;align-items:center;gap:8px;">
-        🔍 Search &amp; Filter Cases
+        🔍 Multi-Parameter Query Engine
       </h3>
-      <span style="font-size:.8rem;color:var(--text-400);">Real-time clinical query engine</span>
+      <span style="font-size:.8rem;color:var(--text-400);">MongoDB Indexed Search</span>
     </div>
 
-    <!-- Quick Universal Search Input -->
+    <!-- Quick Universal Keyword Search -->
     <div class="form-group" style="margin-bottom:18px;">
-      <label class="form-label" for="universalSearch">Quick Keyword Search (Reg No, Caller, Contact, or Species)</label>
-      <input class="form-control" type="text" id="universalSearch" placeholder="Type to search across records (e.g. JVD.2026, Ramesh, Dog, 97272...)" oninput="filterByKeyword()"/>
+      <label class="form-label" for="universalSearch">Search Keyword (Reg No, Caller Name, Contact, Species, or Injury Cause)</label>
+      <input class="form-control" type="text" id="universalSearch" 
+             placeholder="Type to search (e.g. JVD-2026-0001, Ramesh, Dog, Cow, Wire fence...)" 
+             onkeyup="handleSearchInput(event)"/>
     </div>
 
     <!-- Structured Filter Grid -->
@@ -85,7 +103,7 @@
       </div>
       <div class="form-group">
         <label class="form-label" for="filterContact">Contact Number</label>
-        <input class="form-control" type="text" id="filterContact" placeholder="Partial or 10-digit number"/>
+        <input class="form-control" type="text" id="filterContact" placeholder="10-digit number"/>
       </div>
       <div class="form-group">
         <label class="form-label" for="filterType">Animal Classification</label>
@@ -102,7 +120,7 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label" for="filterStatus">Medical Status</label>
+        <label class="form-label" for="filterStatus">Clinical Status</label>
         <select class="form-control" id="filterStatus">
           <option value="">All Statuses</option>
           {% if status_options is defined %}
@@ -121,24 +139,48 @@
       </div>
     </div>
 
-    <div class="filter-actions">
-      <button class="btn btn-primary" onclick="fetchRecords()">🔍 Apply Filters</button>
-      <button class="btn btn-ghost" onclick="clearFilters()">🔄 Clear Filters</button>
-      <span id="loadingNotice" class="hidden" style="color:var(--text-500);font-size:.88rem;margin-left:8px;">
-        ⏳ Loading case records…
-      </span>
+    <div class="filter-actions" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-primary" onclick="fetchRecords(1)">🔍 Apply Filters</button>
+        <button class="btn btn-ghost" onclick="clearFilters()">🔄 Reset Filters</button>
+        <span id="loadingNotice" class="hidden" style="color:var(--text-500);font-size:.88rem;margin-left:8px;">
+          <span class="spinner-inline" style="border-top-color:var(--green-700);border-color:rgba(0,0,0,0.15);"></span> Querying records…
+        </span>
+      </div>
+
+      <!-- Export Actions (Head Only for full file exports) -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        {% if current_user and current_user.role == 'head' %}
+          <button class="btn btn-green btn-sm" onclick="exportServerExcel()" title="Generate Official Excel (.xlsx)">
+            📥 Excel (.xlsx)
+          </button>
+          <button class="btn btn-blue btn-sm" onclick="exportServerPdf()" title="Generate Official PDF Report">
+            📄 Clinical PDF
+          </button>
+        {% else %}
+          <button class="btn btn-ghost btn-sm" onclick="alert('Spreadsheet and formal PDF exports are reserved for Head Administrators. You can inspect and print individual medical sheets using the 🖨 Print button.')" title="Head Access Required" style="opacity:0.75;cursor:pointer;">
+            🔒 Export (Head Only)
+          </button>
+        {% endif %}
+      </div>
     </div>
   </div>
 
   <!-- ── RESULTS BAR & TABLE ── -->
-  <div id="resultsArea" class="hidden">
+  <div id="resultsArea">
     <div class="records-bar">
       <div class="records-count">
         Matching Records: <strong id="recordCount">0</strong> case(s) found
+        <span id="pageSummaryText" style="font-weight:normal;color:var(--text-400);margin-left:8px;"></span>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn btn-green btn-sm" onclick="exportSheet()">📥 Save as Sheet (.xlsx)</button>
-        <button class="btn btn-primary btn-sm" onclick="exportPDF()">📄 Save as PDF Report</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label for="recordsPerPage" style="font-size:0.84rem;color:var(--text-500);">Show:</label>
+        <select id="recordsPerPage" class="form-control" style="width:auto;padding:3px 8px;font-size:0.84rem;" onchange="fetchRecords(1)">
+          <option value="15">15 per page</option>
+          <option value="25" selected>25 per page</option>
+          <option value="50">50 per page</option>
+          <option value="100">100 per page</option>
+        </select>
       </div>
     </div>
 
@@ -154,25 +196,57 @@
             <th>Sex</th>
             <th>Status</th>
             <th>Registered Date</th>
-            <th style="text-align:center;">Action</th>
+            <th style="text-align:center;">Actions</th>
           </tr>
         </thead>
-        <tbody id="casesBody"></tbody>
+        <tbody id="casesBody">
+          <tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-400);">⏳ Loading case records...</td></tr>
+        </tbody>
       </table>
 
       <!-- Empty State -->
       <div id="emptyState" class="empty-state hidden">
         <div class="empty-state-icon">🐾</div>
         <h4>No Cases Found</h4>
-        <p>No veterinary animal case records match your current filters and search keywords.</p>
+        <p>No veterinary animal case records match your current search keywords or filters.</p>
         <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Reset All Filters</button>
+      </div>
+    </div>
+
+    <!-- Server-Side Pagination Bar -->
+    <div class="pagination-wrap" id="paginationWrap">
+      <div id="paginationInfo" style="font-size:0.88rem;color:var(--text-600);font-weight:600;">
+        Page 1 of 1
+      </div>
+      <div class="pagination-controls">
+        <button class="page-btn" id="prevPageBtn" onclick="prevPage()">← Previous</button>
+        <span id="pageButtons" style="display:inline-flex;gap:4px;"></span>
+        <button class="page-btn" id="nextPageBtn" onclick="nextPage()">Next →</button>
       </div>
     </div>
   </div>
 
 </div>
 
-<!-- ════ STATUS BAR (Unified across all pages) ════ -->
+<!-- ════ CASE DETAILS MODAL ════ -->
+<div class="modal-backdrop" id="caseModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modalRegNo">Case Details</h3>
+      <button class="modal-close" onclick="closeCaseModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modalContent">
+      <!-- Injected dynamically -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCaseModal()">Close</button>
+      <a href="#" id="modalPrintLink" target="_blank" class="btn btn-blue">🖨 Print Medical Sheet</a>
+      <a href="#" id="modalEditLink" class="btn btn-primary">✏️ Edit Case</a>
+    </div>
+  </div>
+</div>
+
+<!-- ════ STATUS BAR ════ -->
 <footer class="status-bar">
   <div class="sb-item">📧 info@edufunfoundation.in</div>
   <div class="sb-div">|</div>
@@ -184,9 +258,13 @@
 </footer>
 
 <script>
-let allRecords = [];
-let displayedRecords = [];
-// Species dictionary
+let currentPage = 1;
+let totalPages = 1;
+let currentCases = [];
+let searchDebounceTimer = null;
+
+const isHeadUser = "{{ 'true' if (current_user and current_user.role == 'head') else 'false' }}" === 'true';
+
 const speciesMap = {
   "Domestic": [
     "Dog","Cow","Buffalo","Puppy","Goat","Sheep","Horse",
@@ -200,16 +278,7 @@ const speciesMap = {
   ]
 };
 
-// Set default date range to last 30 days
-(function initDateRange(){
-  const today = new Date();
-  const past  = new Date(); 
-  past.setDate(today.getDate() - 30);
-  document.getElementById('filterTo').value   = today.toISOString().slice(0, 10);
-  document.getElementById('filterFrom').value = past.toISOString().slice(0, 10);
-})();
-
-function updateFilterSpecies(){
+function updateFilterSpecies() {
   const type = document.getElementById('filterType').value;
   const sel  = document.getElementById('filterSpecies');
   sel.innerHTML = '<option value="">All Species</option>';
@@ -221,73 +290,89 @@ function updateFilterSpecies(){
   });
 }
 
-function getStatusBadge(s){
+function getStatusBadge(s) {
   const clean = (s || '').trim();
   let cls = 's-run';
-  if(clean === 'Under Treatment') cls = 's-under';
-  else if(clean === 'Site Treatment') cls = 's-site';
-  else if(clean === 'JVD Treatment') cls = 's-jvd';
-  else if(clean === 'Release') cls = 's-release';
-  else if(clean === 'Death') cls = 's-death';
+  if (clean === 'Under Treatment') cls = 's-under';
+  else if (clean === 'Site Treatment') cls = 's-site';
+  else if (clean === 'JVD Treatment') cls = 's-jvd';
+  else if (clean === 'Release') cls = 's-release';
+  else if (clean === 'Death') cls = 's-death';
   return `<span class="s-pill ${cls}">${clean || 'Unknown'}</span>`;
 }
 
-function fetchRecords(){
+function handleSearchInput(e) {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    fetchRecords(1);
+  }, 350);
+}
+
+function getQueryUrlParams(page = 1) {
+  const params = new URLSearchParams();
+  const q = document.getElementById('universalSearch').value.trim();
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+  const contact = document.getElementById('filterContact').value.trim();
+  const type = document.getElementById('filterType').value;
+  const species = document.getElementById('filterSpecies').value;
+  const status = document.getElementById('filterStatus').value;
+  const limit = document.getElementById('recordsPerPage').value;
+
+  if (q) params.append('q', q);
+  if (from) params.append('from_date', from);
+  if (to) params.append('to_date', to);
+  if (contact) params.append('contact_no', contact);
+  if (type) params.append('animal_type', type);
+  if (species) params.append('species', species);
+  if (status) params.append('status', status);
+
+  params.append('page', page);
+  params.append('limit', limit);
+  return params;
+}
+
+function fetchRecords(page = 1) {
+  currentPage = page;
   const loading = document.getElementById('loadingNotice');
   loading.classList.remove('hidden');
 
-  const params = new URLSearchParams({
-    from_date:   document.getElementById('filterFrom').value,
-    to_date:     document.getElementById('filterTo').value,
-    contact_no:  document.getElementById('filterContact').value.trim(),
-    animal_type: document.getElementById('filterType').value,
-    species:     document.getElementById('filterSpecies').value,
-    status:      document.getElementById('filterStatus').value,
-  });
+  const params = getQueryUrlParams(page);
 
-  const apiUrl = "{{ url_for('api_cases') if url_for is defined else '/api/cases' }}";
-  fetch(`${apiUrl}?${params.toString()}`)
+  fetch(`/api/cases?${params.toString()}`)
     .then(r => r.json())
     .then(data => {
       loading.classList.add('hidden');
-      allRecords = data.cases || [];
-      displayedRecords = [...allRecords];
-      renderTable(displayedRecords);
+      if (data.success) {
+        currentCases = data.cases || [];
+        totalPages = data.totalPages || 1;
+        renderTable(currentCases, data.total, data.page, data.totalPages);
+      } else {
+        alert('Error: ' + data.error);
+      }
     })
     .catch(() => {
       loading.classList.add('hidden');
-      alert('Unable to load records from server. Please check your connection.');
+      alert('Unable to load records from server. Please check your network connection.');
     });
 }
 
-function filterByKeyword(){
-  const kw = document.getElementById('universalSearch').value.trim().toLowerCase();
-  if(!kw){
-    displayedRecords = [...allRecords];
-  } else {
-    displayedRecords = allRecords.filter(r => {
-      const reg = String(r.reg_no || '').toLowerCase();
-      const caller = String(r.caller_name || '').toLowerCase();
-      const contact = String(r.contact_no || '').toLowerCase();
-      const species = String(r.species || '').toLowerCase();
-      const cause = String(r.cause || '').toLowerCase();
-      return reg.includes(kw) || caller.includes(kw) || contact.includes(kw) || species.includes(kw) || cause.includes(kw);
-    });
-  }
-  renderTable(displayedRecords);
-}
-
-function renderTable(records){
-  const area  = document.getElementById('resultsArea');
-  const body  = document.getElementById('casesBody');
+function renderTable(records, total, page, pages) {
+  const body = document.getElementById('casesBody');
   const empty = document.getElementById('emptyState');
   const count = document.getElementById('recordCount');
-  const tbl   = document.getElementById('casesTable');
+  const tbl = document.getElementById('casesTable');
+  const pageInfo = document.getElementById('paginationInfo');
+  const pageSummaryText = document.getElementById('pageSummaryText');
 
-  area.classList.remove('hidden');
-  count.textContent = records.length;
+  count.textContent = total;
+  pageInfo.textContent = `Page ${page} of ${pages}`;
+  pageSummaryText.textContent = total > 0 ? `(Showing page ${page} of ${pages})` : '';
 
-  if(!records.length){
+  document.getElementById('prevPageBtn').disabled = page <= 1;
+  document.getElementById('nextPageBtn').disabled = page >= pages;
+
+  if (!records.length) {
     empty.classList.remove('hidden');
     tbl.style.display = 'none';
     return;
@@ -298,18 +383,34 @@ function renderTable(records){
 
   body.innerHTML = records.map(r => `
     <tr>
-      <td>${r.reg_no || ''}</td>
-      <td><strong>${r.caller_name || ''}</strong></td>
-      <td>${r.contact_no || ''}</td>
-      <td>${r.animal_type || ''}</td>
-      <td>${r.species || ''}</td>
-      <td>${r.sex || ''}</td>
-      <td>${getStatusBadge(r.status)}</td>
+      <td><code><strong>${escapeHtml(r.reg_no)}</strong></code></td>
+      <td><strong>${escapeHtml(r.caller_name)}</strong></td>
+      <td>${escapeHtml(r.contact_no)}</td>
+      <td>${escapeHtml(r.animal_type)}</td>
+      <td>${escapeHtml(r.species)}</td>
+      <td>${escapeHtml(r.sex || '–')}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${getStatusBadge(r.status)}
+          <select onchange="quickUpdateStatus('${r.reg_no}', this.value)" style="font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;" title="Quick Status Update">
+            <option value="" disabled selected>Change</option>
+            <option value="Under Treatment">Under Treatment</option>
+            <option value="Site Treatment">Site Treatment</option>
+            <option value="JVD Treatment">JVD Treatment</option>
+            <option value="Release">Release</option>
+            <option value="Death">Death</option>
+            <option value="Run Away">Run Away</option>
+          </select>
+        </div>
+      </td>
       <td style="white-space:nowrap;font-size:.82rem;color:var(--text-500);">
         ${r.post_time ? r.post_time.slice(0, 10) : '–'}
       </td>
       <td style="text-align:center;white-space:nowrap;">
-        <a href="/entry?reg_no=${encodeURIComponent(r.reg_no)}" class="act act-edit" title="Edit Case Record" style="margin-right:6px;">
+        <button onclick="openCaseModal('${r.reg_no}')" class="act act-details" title="Inspect Case Details" style="margin-right:4px;">
+          🔍 View
+        </button>
+        <a href="/entry?reg_no=${encodeURIComponent(r.reg_no)}" class="act act-edit" title="Edit Case Record" style="margin-right:4px;">
           ✏️ Edit
         </a>
         <a href="/print/${encodeURIComponent(r.reg_no)}" target="_blank" class="act act-print" title="Print Medical Sheet">
@@ -320,92 +421,121 @@ function renderTable(records){
   `).join('');
 }
 
-function clearFilters(){
+function prevPage() {
+  if (currentPage > 1) fetchRecords(currentPage - 1);
+}
+function nextPage() {
+  if (currentPage < totalPages) fetchRecords(currentPage + 1);
+}
+
+function clearFilters() {
   document.getElementById('universalSearch').value = '';
+  document.getElementById('filterFrom').value = '';
+  document.getElementById('filterTo').value = '';
   document.getElementById('filterContact').value = '';
   document.getElementById('filterType').value = '';
   document.getElementById('filterSpecies').innerHTML = '<option value="">All Species</option>';
   document.getElementById('filterStatus').value = '';
-  fetchRecords();
+  fetchRecords(1);
 }
 
-function exportSheet(){
-  if(!displayedRecords.length){
-    alert('No records available to export.');
-    return;
-  }
-  const headers = ['Reg No','Caller Name','Village','City','District','State','Contact No',
-                   'Animal Type','Species','Sex','Cause','Discrimination','Treatment',
-                   'Contribution','Post Time','Status','Last Edited By','Last Edited At'];
-  const rows = displayedRecords.map(r => [
-    r.reg_no, r.caller_name, r.village, r.city, r.district, r.state, r.contact_no,
-    r.animal_type, r.species, r.sex, r.cause, r.discrimination, r.treatment,
-    r.contribution, r.post_time, r.status, r.last_edited_by, r.last_edited_at
-  ]);
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  ws['!cols'] = headers.map(() => ({ wch: 16 }));
-  XLSX.utils.book_append_sheet(wb, ws, 'JVD Cases');
-  XLSX.writeFile(wb, `JVD_Cases_${new Date().toISOString().slice(0,10)}.xlsx`);
+// Quick Status Update from Table
+function quickUpdateStatus(regNo, newStatus) {
+  if (!newStatus) return;
+  fetch(`/api/cases/${encodeURIComponent(regNo)}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      fetchRecords(currentPage);
+    } else {
+      alert('Error updating status: ' + data.error);
+    }
+  })
+  .catch(() => alert('Network error updating case status.'));
 }
 
-function exportPDF(){
-  if(!displayedRecords.length){
-    alert('No records available to export.');
-    return;
-  }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+// Case Details Modal
+function openCaseModal(regNo) {
+  const c = currentCases.find(item => item.reg_no === regNo);
+  if (!c) return;
 
-  // Top header banner
-  doc.setFillColor(22, 61, 46);
-  doc.rect(0, 0, 297, 18, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Jivdaya Vatsalya Dham — Veterinary Hospital Case Records', 14, 12);
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Generated: ${new Date().toLocaleString('en-IN')}  |  Edufun Foundation Trust  |  edufunfoundation.in`, 175, 12);
+  document.getElementById('modalRegNo').textContent = `Case ${c.reg_no} — ${c.species} (${c.animal_type})`;
+  document.getElementById('modalPrintLink').href = `/print/${encodeURIComponent(c.reg_no)}`;
+  document.getElementById('modalEditLink').href = `/entry?reg_no=${encodeURIComponent(c.reg_no)}`;
 
-  doc.autoTable({
-    columns: [
-      {header:'Reg No',      dataKey:'reg_no'},
-      {header:'Caller',      dataKey:'caller_name'},
-      {header:'Contact',     dataKey:'contact_no'},
-      {header:'Animal',      dataKey:'animal_type'},
-      {header:'Species',     dataKey:'species'},
-      {header:'Sex',         dataKey:'sex'},
-      {header:'Cause',       dataKey:'cause'},
-      {header:'Treatment',   dataKey:'treatment'},
-      {header:'Status',      dataKey:'status'},
-      {header:'Date',        dataKey:'post_time'},
-      {header:'Staff',       dataKey:'last_edited_by'},
-    ],
-    body: displayedRecords.map(r => ({
-      ...r,
-      post_time: r.post_time ? r.post_time.slice(0, 10) : '',
-    })),
-    startY: 22,
-    styles: { fontSize: 7, cellPadding: 2.5, overflow: 'linebreak' },
-    headStyles: { fillColor: [22, 61, 46], textColor: 255, fontStyle: 'bold', fontSize: 7 },
-    alternateRowStyles: { fillColor: [248, 250, 249] },
-    margin: { left: 8, right: 8 },
-  });
+  const address = [c.village, c.city, c.district, c.state].filter(Boolean).join(', ');
 
-  const pageCount = doc.internal.getNumberOfPages();
-  for(let i = 1; i <= pageCount; i++){
-    doc.setPage(i);
-    doc.setFontSize(7);
-    doc.setTextColor(120);
-    doc.text(`Page ${i} of ${pageCount}  •  Jivdaya Vatsalya Dham  •  Emergency Helpline: 97272-97187  •  info@edufunfoundation.in`, 8, 204);
-  }
+  document.getElementById('modalContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:120px 1fr;gap:10px 16px;font-size:0.9rem;">
+      <strong style="color:var(--text-500);">Registration:</strong>
+      <div><code>${escapeHtml(c.reg_no)}</code> &nbsp; ${getStatusBadge(c.status)}</div>
 
-  doc.save(`JVD_Case_Records_${new Date().toISOString().slice(0,10)}.pdf`);
+      <strong style="color:var(--text-500);">Caller:</strong>
+      <div><strong>${escapeHtml(c.caller_name)}</strong> (📞 ${escapeHtml(c.contact_no)})</div>
+
+      <strong style="color:var(--text-500);">Rescue Site:</strong>
+      <div>${escapeHtml(address || 'Samarvada, Dhanera, Gujarat')}</div>
+
+      <strong style="color:var(--text-500);">Animal:</strong>
+      <div>${escapeHtml(c.animal_type)} • <strong>${escapeHtml(c.species)}</strong> • Sex: ${escapeHtml(c.sex || 'Unknown')}</div>
+
+      <strong style="color:var(--text-500);">Cause/Injury:</strong>
+      <div style="color:var(--red);">${escapeHtml(c.cause || '–')}</div>
+
+      <strong style="color:var(--text-500);">Description:</strong>
+      <div>${escapeHtml(c.discrimination || 'No additional notes provided.')}</div>
+
+      <strong style="color:var(--text-500);">Treatment:</strong>
+      <div style="background:var(--bg-subtle);padding:8px 12px;border-radius:4px;border:1px solid var(--border);">
+        ${escapeHtml(c.treatment || '–')}
+      </div>
+
+      <strong style="color:var(--text-500);">Contribution:</strong>
+      <div>${escapeHtml(c.contribution || 'None')}</div>
+
+      <strong style="color:var(--text-500);">Registered:</strong>
+      <div>${escapeHtml(c.post_time || '–')} (By: ${escapeHtml(c.created_by || 'Staff')})</div>
+
+      <strong style="color:var(--text-500);">Last Edited:</strong>
+      <div>${escapeHtml(c.last_edited_at || '–')} (By: ${escapeHtml(c.last_edited_by || 'Staff')})</div>
+    </div>
+  `;
+
+  document.getElementById('caseModal').classList.add('active');
 }
 
-// Initial fetch on page load
-document.addEventListener('DOMContentLoaded', fetchRecords);
+function closeCaseModal() {
+  document.getElementById('caseModal').classList.remove('active');
+}
+
+// Server-side Exports (Head only)
+function exportServerExcel() {
+  const params = getQueryUrlParams(1);
+  window.location.href = `/api/export/excel?${params.toString()}`;
+}
+
+function exportServerPdf() {
+  const params = getQueryUrlParams(1);
+  window.location.href = `/api/export/pdf?${params.toString()}`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetchRecords(1);
+});
 </script>
 
 </body>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Staff Profile – Jivdaya Vatsalya Dham CRM</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.href='style.css';"/>
+</head>
+<body>
+
+<!-- ════ NAVBAR (Unified) ════ -->
+<nav class="navbar">
+  <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
+    <div class="nav-logo">
+      <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
+    </div>
+    <span class="nav-name">
+      Jivdaya Vatsalya Dham
+      <small>Edufun Foundation Trust</small>
+    </span>
+  </a>
+
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" onclick="document.getElementById('navLinks').classList.toggle('open')">☰</button>
+
+  <div class="nav-links" id="navLinks">
+    <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
+    <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link">Dashboard</a>
+    {% if current_user %}
+      <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="nav-link">Case Entry</a>
+      <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
+      {% if current_user.role == 'head' %}
+        <a href="{{ url_for('admin') if url_for is defined else '/admin' }}" class="nav-link">Admin</a>
+      {% endif %}
+      <a href="{{ url_for('profile') if url_for is defined else '/profile' }}" class="user-badge active" style="text-decoration:none;">
+        👤 {{ current_user.full_name }}
+        <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}">
+          {{ current_user.role }}
+        </span>
+      </a>
+      <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">Logout</a>
+    {% else %}
+      <div class="nav-auth">
+        <a href="{{ url_for('login') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">🔑 Staff Login</a>
+        <a href="{{ url_for('register') if url_for is defined else 'register.html' }}" class="btn btn-primary btn-sm">📝 Register</a>
+      </div>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-wrap">
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ 'error' if cat == 'error' else 'success' }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ════ PROFILE CONTENT ════ -->
+<div class="dash-container" style="padding-top:40px;padding-bottom:60px;">
+  <div class="profile-card">
+    
+    <div class="profile-avatar-wrap">
+      {% if current_user.avatar %}
+        <img src="{{ current_user.avatar }}" alt="{{ current_user.full_name }}"/>
+      {% else %}
+        {{ current_user.full_name.slice(0, 1) if current_user and current_user.full_name else 'U' }}
+      {% endif %}
+    </div>
+
+    <div style="text-align:center;margin-bottom:20px;">
+      <h2 style="font-size:1.5rem;font-weight:800;color:var(--green-950);margin-bottom:4px;">
+        {{ current_user.full_name }}
+      </h2>
+      <div style="display:inline-flex;align-items:center;gap:8px;margin-top:6px;">
+        <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}" style="font-size:0.85rem;padding:4px 14px;">
+          {{ '👑 Head Administrator' if current_user.role == 'head' else '👷 Care Employee' }}
+        </span>
+        <span class="status-pill-{{ current_user.status if current_user.status else 'active' }}">
+          ● {{ (current_user.status or 'active')|upper }}
+        </span>
+      </div>
+    </div>
+
+    <div class="profile-info-grid">
+      <div class="profile-info-label">Username:</div>
+      <div class="profile-info-val"><code>{{ current_user.username }}</code></div>
+
+      <div class="profile-info-label">Official Email:</div>
+      <div class="profile-info-val">{{ current_user.email or 'Not provided (Local Account)' }}</div>
+
+      <div class="profile-info-label">Account Role:</div>
+      <div class="profile-info-val">
+        {% if current_user.role == 'head' %}
+          Full Administrator (Case Management, Exports, Audit Logs, Staff Approvals)
+        {% else %}
+          Care Employee (Case Intake, Rescue Triage, Medical Records Lookup)
+        {% endif %}
+      </div>
+
+      <div class="profile-info-label">Account Status:</div>
+      <div class="profile-info-val" style="color:var(--green-700);">
+        Active &amp; Authorized
+      </div>
+
+      <div class="profile-info-label">Account Type:</div>
+      <div class="profile-info-val">
+        {% if current_user.googleId %}
+          🔒 Google Workspace Verified ({{ allowed_domain or 'edufunfoundation.in' }})
+        {% else %}
+          🔑 Internal Staff Credentials
+        {% endif %}
+      </div>
+
+      <div class="profile-info-label">Last Sign In:</div>
+      <div class="profile-info-val">
+        {{ current_user.last_login.toLocaleString('en-IN') if current_user.last_login else 'Active Session' }}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px;">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-primary">📊 Dashboard</a>
+      <a href="{{ url_for('entry') }}" class="btn btn-green">📋 Case Entry</a>
+      {% if current_user.role == 'head' %}
+        <a href="{{ url_for('admin') }}" class="btn btn-blue">🛡️ Administration Portal</a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ STATUS BAR ════ -->
+<footer class="status-bar">
+  <div class="sb-item">📧 info@edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">📞 97272-97187</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🌐 edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🕐 24/7 Emergency Helpline</div>
+</footer>
+
+</body>
+</html>

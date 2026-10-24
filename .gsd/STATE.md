@@ -1,48 +1,39 @@
 # JVD CRM — Project State & Session Memory
 
 ## Current Status
-- **Current Phase**: Phase 4 & 5 (Common UI Components, Pages & Dashboard Integration)
-- **Previous Phase**: Phase 3 (Modular Backend Architecture & Security Middleware) — COMPLETED
+- **Current Phase**: Phase 12 & Final Acceptance Criteria — COMPLETED
 - **Branch**: main
-- **Last Verification**: 13/13 API integration tests passed via scripts/test_api_endpoints.js.
+- **Last Verification**: 
+  - `npm test`: All 13/13 API & integration tests passed.
+  - `npm run test:models`: All model schemas and concurrent atomic registration tests passed.
+  - `npm run test:templates`: All 10 HTML/Nunjucks templates rendered with 100% PASS.
+  - Legacy `scripts/integration_test.js`: All 8/8 tests passed.
 
-## Completed Work
-1. Thoroughly audited all existing files: `index.html`, `dashboard.html`, `entry.html`, `view.html`, `login.html`, `register.html`, `print_case.html`, `success.html`, `style.css`, `server.js`, `models/`, `scripts/`.
-2. Verified existing data: MongoDB is active and ready.
-3. Created `.gitignore` preventing leaks of `.env`, `node_modules`, logs.
-4. Committed initial clean baseline (`2dd563b`).
-5. Installed required security and export libraries: `helmet`, `express-rate-limit`, `exceljs`, `pdfkit`.
-6. Formulated finalized `.gsd/SPEC.md` and `.gsd/ROADMAP.md`.
-7. Implemented enhanced `models/User.js` with status, role, avatar, last_login.
-8. Implemented `models/Counter.js` with atomic, concurrency-safe `getNextRegNo()` sequence generator.
-9. Implemented enhanced `models/Case.js` with indexes, validation, archive flag.
-10. Implemented `models/AuditLog.js` with comprehensive action tracking.
-11. Verified all models with `scripts/test_models.js`.
-12. Modularized backend architecture:
-   - `middleware/security.js` (Helmet, query sanitizer)
-   - `middleware/rateLimiter.js` (Auth and API limiters)
-   - `middleware/auth.js` (Session authentication and account status checks)
-   - `middleware/rbac.js` (HEAD vs EMPLOYEE role checks)
-   - `middleware/errorHandler.js` (Centralized safe error handling)
-   - `services/auditService.js` (Automated audit logging)
-   - `services/exportService.js` (ExcelJS workbook and PDFKit landscape streaming)
-   - `controllers/caseController.js` (Case CRUD, query, status update, archive)
-   - `controllers/dashboardController.js` (MongoDB aggregation pipeline metrics)
-   - `controllers/exportController.js` (Excel and PDF exports)
-   - `controllers/adminController.js` (Staff accounts and audit logs)
-   - `controllers/authController.js` (Google OAuth 2.0 and local credentials)
-   - `routes/apiRoutes.js` (Mounted on `/api`)
-   - `routes/webRoutes.js` (Mounted on `/`)
-   - `server.js` (Unified server configuration)
-13. Verified complete backend with `scripts/test_api_endpoints.js`.
-
-## Immediate Next Steps
-- Implement frontend UI enhancements:
-  - Create `profile.html` (Staff profile and status)
-  - Create `admin.html` (User management and audit log viewer for HEAD)
-  - Enhance `dashboard.html` with all required status cards, recent cases table, and live DB updates
-  - Enhance `view.html` with server-side pagination, details modal, quick status change, and server export buttons
-  - Enhance `entry.html` with reset dialog and clean validation feedback
-  - Harmonize responsive navbar with mobile hamburger menu across all pages
-
-
+## Completed Milestones
+1. **Audit & Specification**: Full audit of existing templates, scripts, models, and dependencies; created `.gitignore`; created `.gsd/SPEC.md` and `.gsd/ROADMAP.md`.
+2. **Database Models & Atomic Counters**:
+   - `models/User.js`: Roles (`employee`, `head`), account status (`active`, `blocked`), avatar, last_login.
+   - `models/Case.js`: Validations, statuses, archive flag, compound indexes.
+   - `models/Counter.js`: Concurrency-safe atomic `getNextRegNo()` sequence generator (`JVD-YYYY-0001`).
+   - `models/AuditLog.js`: Full security and action tracking.
+3. **Modular Backend Architecture**:
+   - `middleware/security.js`: Helmet CSP and query sanitizer.
+   - `middleware/rateLimiter.js`: Auth and API rate limiters.
+   - `middleware/auth.js` & `middleware/rbac.js`: Session and role guards.
+   - `middleware/errorHandler.js`: Safe centralized error handler.
+   - `services/auditService.js` & `services/exportService.js`: ExcelJS & PDFKit.
+   - Controllers: `caseController.js`, `dashboardController.js`, `exportController.js`, `adminController.js`, `authController.js`.
+   - Routes: `routes/apiRoutes.js` and `routes/webRoutes.js`.
+4. **Google Authentication & Role Access**: Google OAuth 2.0 with organizational domain check (`@edufunfoundation.in`), local credentials fallback, secure session cookies, initial Head administrator bootstrapping.
+5. **UI Pages & Components**:
+   - `index.html`: Responsive homepage with JVD branding and CRM portal links.
+   - `dashboard.html`: Live DB aggregation metrics, recent cases table, quick actions.
+   - `entry.html`: Multi-section intake form, atomic reg number badge, auto-load on `?reg_no=`, reset dialog, double-submit protection.
+   - `view.html`: Universal search, combined filters, server-side pagination, details modal, quick status change, Excel/PDF downloads.
+   - `print_case.html`: Printable A4 medical case sheet.
+   - `success.html`: Post-submission confirmation with instant print action.
+   - `profile.html`: Staff profile, role pill, account status, security details.
+   - `admin.html`: Head admin portal with staff user management (role assignment, account blocking) and audit logs viewer.
+6. **Documentation & Deployment**:
+   - `README.md`: Complete architecture overview, feature list, local setup guide, and free-tier deployment guide for Render/Railway and MongoDB Atlas M0.
+   - `.env.example`: Clear environment variables template.

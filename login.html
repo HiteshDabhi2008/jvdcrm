@@ -19,7 +19,10 @@
       <small>Edufun Foundation Trust</small>
     </span>
   </a>
-  <div class="nav-links">
+
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" onclick="document.getElementById('navLinks').classList.toggle('open')">☰</button>
+
+  <div class="nav-links" id="navLinks">
     <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
     <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link">Dashboard</a>
     <div class="nav-auth">
@@ -51,9 +54,9 @@
 
     <!-- Google Sign-In with organization restriction -->
     <div style="text-align:center;margin-bottom:6px;">
-      <div class="domain-badge">🔒 @edufunfoundation.in accounts only</div>
+      <div class="domain-badge">🔒 @{{ allowed_domain or 'edufunfoundation.in' }} accounts only</div>
     </div>
-    <a href="{{ url_for('google.login') if url_for is defined else '/auth/google' }}" class="btn-google">
+    <a href="{{ url_for('google.login') if url_for is defined else '/auth/google' }}" class="btn-google" id="googleBtn" onclick="this.innerHTML='<span class=\"spinner-inline\"></span> Connecting to Google...';">
       <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
       Continue with Google Workspace
     </a>
@@ -61,7 +64,7 @@
     <div class="or-divider">or sign in with credentials</div>
 
     <!-- Username & Password Form -->
-    <form method="POST" action="{{ url_for('login') if url_for is defined else '/login' }}">
+    <form method="POST" action="{{ url_for('login') if url_for is defined else '/login' }}" id="loginForm">
       <div class="form-group">
         <label class="form-label" for="username">Staff Username <span class="req">*</span></label>
         <input class="form-control" type="text" id="username" name="username"
@@ -72,7 +75,9 @@
         <input class="form-control" type="password" id="password" name="password"
                placeholder="Enter your account password" autocomplete="current-password" required/>
       </div>
-      <button class="btn btn-primary btn-full btn-lg" type="submit" style="margin-top:6px;">Sign In to CRM →</button>
+      <button class="btn btn-primary btn-full btn-lg" type="submit" id="submitBtn" style="margin-top:6px;">
+        Sign In to CRM →
+      </button>
     </form>
 
     <div class="auth-divider"></div>
@@ -93,6 +98,14 @@
   <div class="sb-div">|</div>
   <div class="sb-item">🕐 24/7 Emergency Helpline</div>
 </footer>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', () => {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-inline"></span> Signing In...';
+});
+</script>
 
 </body>
 </html>

@@ -4,8 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node scripts/test_api_endpoints.js",
+    "test:models": "node scripts/test_models.js",
+    "test:templates": "node scripts/test_templates.js"
   },
   "keywords": [],
   "author": "",

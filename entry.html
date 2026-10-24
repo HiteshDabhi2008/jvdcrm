@@ -19,20 +19,24 @@
       <small>Edufun Foundation Trust</small>
     </span>
   </a>
-  <div class="nav-links">
+
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" onclick="document.getElementById('navLinks').classList.toggle('open')">☰</button>
+
+  <div class="nav-links" id="navLinks">
     <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
     <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link">Dashboard</a>
     <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="nav-link active">Case Entry</a>
+    <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
     {% if current_user and current_user.role == 'head' %}
-      <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
+      <a href="{{ url_for('admin') if url_for is defined else '/admin' }}" class="nav-link">Admin</a>
     {% endif %}
     {% if current_user %}
-      <span class="user-badge">
+      <a href="{{ url_for('profile') if url_for is defined else '/profile' }}" class="user-badge" style="text-decoration:none;">
         👤 {{ current_user.full_name }}
         <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}">
           {{ current_user.role }}
         </span>
-      </span>
+      </a>
       <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">Logout</a>
     {% endif %}
   </div>
@@ -369,7 +373,10 @@ function loadCase(){
     });
 }
 
-function clearForm(){
+function clearForm(force = false){
+  if (!force && !confirm('Are you sure you want to reset and clear all fields in this form?')) {
+    return;
+  }
   const ids = ['f_caller_name','f_contact_no','f_village','f_city','f_district',
                'f_cause','f_discrimination','f_treatment','f_contribution'];
   ids.forEach(id => {
@@ -384,7 +391,7 @@ function clearForm(){
   document.getElementById('lookupMsg').textContent = '';
 }
 
-// Auto-load case if ?reg_no= is present in URL
+// Auto-load case if ?reg_no= is present in URL, and prevent double submission
 document.addEventListener('DOMContentLoaded', () => {
   const urlParams = new URLSearchParams(window.location.search);
   const regNo = urlParams.get('reg_no');
@@ -395,6 +402,18 @@ document.addEventListener('DOMContentLoaded', () => {
       input.value = regNo;
       loadCase();
     }
+  }
+
+  // Double submit protection
+  const caseForm = document.getElementById('caseForm');
+  if (caseForm) {
+    caseForm.addEventListener('submit', (e) => {
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-inline"></span> Saving Case...';
+      }
+    });
   }
 });
 </script>
