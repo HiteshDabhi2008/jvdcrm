@@ -1,0 +1,308 @@
+# ==============================================================================
+# JIVDAYA VATSALYA DHAM (JVD CRM) — MASTER WORKFLOW & OPERATIONAL RUNBOOK
+# Veterinary Care Record Management System
+# Edufun Foundation Trust • Registration No. E/1897/BK
+# Helpline: 97272-97187 • Email: info@edufunfoundation.in
+# GitHub: https://github.com/HiteshDabhi2008/jvdcrm
+# ==============================================================================
+
+version: "1.0.0"
+last_updated: "2026-10-24"
+status: "Production Ready (Live at http://127.0.0.1:5000)"
+
+organization:
+  name: "Edufun Foundation Trust"
+  project: "Jivdaya Vatsalya Dham Veterinary Care CRM"
+  registration_no: "E/1897/BK"
+  helpline: "97272-97187"
+  email: "info@edufunfoundation.in"
+  website: "edufunfoundation.in"
+  head_office: "38, Navgrah Society, Behind Madhusudan Plaza, Dhanera, Banaskantha, Gujarat - 385310"
+  hospital_location: "NH-168, Dhanera Khimat Highway, Samarvada Village, Ta: Dhanera"
+  repository: "https://github.com/HiteshDabhi2008/jvdcrm"
+  cost_policy: "100% Free & Open-Source (Zero Paid Subscriptions or APIs)"
+
+technology_stack:
+  backend:
+    runtime: "Node.js (v18+)"
+    framework: "Express.js (Modular MVC)"
+    orm_odm: "Mongoose v9"
+    auth_engine: "Passport.js (Google OAuth 2.0 + Local Bcrypt Fallback)"
+    session_engine: "express-session (httpOnly, sameSite: lax, 24h expiration)"
+    templating: "Nunjucks (Jinja2-compatible filters & tags)"
+    export_excel: "exceljs (.xlsx streaming)"
+    export_pdf: "pdfkit (A4 landscape vector streaming)"
+  frontend:
+    markup: "HTML5 Semantic"
+    styling: "Pure Vanilla CSS3 (Custom Forest Green / Amber Tokens, 0% Tailwind)"
+    interactivity: "Vanilla JavaScript ES6+ (Unobtrusive Event Listeners)"
+  database:
+    primary: "MongoDB (Local: mongodb://127.0.0.1:27017/jvd_crm)"
+    cloud_tier: "MongoDB Atlas M0 Free Sandbox (512MB perpetual storage)"
+  security_hardening:
+    headers: "Helmet CSP (Content Security Policy, script-src-attr enabled)"
+    rate_limiting: "express-rate-limit (Auth: 30 req/15min, API: 500 req/15min)"
+    input_sanitization: "MongoDB Operator Injection & ReDoS Protection"
+    rbac_enforcement: "Server-side route guards on all protected API endpoints"
+
+role_based_access_control:
+  roles:
+    HEAD:
+      title: "Head Administrator / Supervisory Doctor"
+      permissions:
+        - "Access Home, Dashboard, Case Entry, and View Records"
+        - "Create, edit, and update statuses of all cases"
+        - "Archive or restore case records"
+        - "Export filtered records to formatted Excel (.xlsx)"
+        - "Export filtered records to vector PDF (.pdf)"
+        - "Access Administration Portal (/admin)"
+        - "Manage staff accounts (promote/demote roles, activate/block accounts)"
+        - "Inspect immutable system audit logs"
+    EMPLOYEE:
+      title: "Care Employee / Field Veterinarian / Rescue Staff"
+      permissions:
+        - "Access Home, Dashboard, Case Entry, and View Records"
+        - "Submit new veterinary admissions"
+        - "Search, filter, and view case records"
+        - "Update case clinical statuses (e.g. Under Treatment -> Release)"
+        - "Print individual single-page clinical case sheets"
+        - "Access personal profile"
+      restrictions:
+        - "Cannot perform bulk Excel or PDF data exports (protects rescuer data)"
+        - "Cannot archive cases"
+        - "Cannot access administration portal or change user roles"
+
+system_workflows:
+  - id: "flow_01_public_portal"
+    name: "Public Home & Organization Portal"
+    route: "GET /"
+    template: "index.html"
+    access: "Public (Anonymous & Authenticated)"
+    steps:
+      - "Visitor navigates to http://127.0.0.1:5000/."
+      - "Displays hospital introduction, 24/7 helpline, and core medical services."
+      - "Renders direct entry points to Staff Sign In (/login) and Staff Register (/register)."
+      - "If user has active session, displays direct link to Live Dashboard."
+
+  - id: "flow_02_google_onboarding"
+    name: "Compulsory Google Workspace Registration"
+    route: "GET /register"
+    template: "register.html"
+    access: "Guest Only"
+    policy: "Compulsory Google Workspace SSO (@edufunfoundation.in). Manual form disabled."
+    steps:
+      - "Staff visits /register."
+      - "Page displays organization notice: '🔒 Compulsory: Official @edufunfoundation.in Accounts Only'."
+      - "Staff clicks 'Register & Onboard with Google (@edufunfoundation.in)'."
+      - "Redirects to Google OAuth consent (/auth/google)."
+      - "Backend validates authenticated email ends with @edufunfoundation.in."
+      - "If email domain is unauthorized, rejects with 403-equivalent flash notice."
+      - "If valid, checks if user exists in MongoDB."
+      - "If new, provisions User record with role (HEAD if first user or HEAD_ADMIN_EMAIL, else EMPLOYEE)."
+      - "Logs USER_REGISTRATION audit event."
+      - "Issues encrypted session cookie and redirects to /dashboard."
+
+  - id: "flow_03_staff_login"
+    name: "Staff Authentication & Session Issuance"
+    route: "GET /login, POST /login"
+    template: "login.html"
+    access: "Guest Only"
+    steps:
+      - "Staff visits /login."
+      - "Primary Option: Clicks 'Continue with Google Workspace (@edufunfoundation.in)'."
+      - "Fallback Option: Enter username and password (for bootstrap admin)."
+      - "Checks user status; blocked accounts are rejected immediately."
+      - "Validates credentials and issues httpOnly session cookie with 24h validity."
+      - "Redirects to /dashboard with welcome flash."
+
+  - id: "flow_04_live_dashboard"
+    name: "Real-Time Clinical Analytics Dashboard"
+    route: "GET /dashboard, GET /api/dashboard/stats"
+    template: "dashboard.html"
+    access: "Authenticated Staff (EMPLOYEE & HEAD)"
+    steps:
+      - "Dashboard initiates MongoDB $facet aggregation pipeline."
+      - "Calculates real-time counts for Total, Under Treatment, Site Treatment, JVD Hospital, Released, Death, Run Away."
+      - "Computes Domestic vs. Wild species ratio."
+      - "Loads recent 8 animal admissions with status badges and timestamps."
+      - "Renders quick action buttons: New Admission, View Records, Excel, PDF, Admin."
+
+  - id: "flow_05_case_admission"
+    name: "Veterinary Case Admission & Unique ID Generation"
+    route: "GET /entry, POST /api/cases"
+    template: "entry.html"
+    access: "Authenticated Staff"
+    steps:
+      - "Top banner shows dynamic next sequential registration number (e.g. JVD-2026-0005)."
+      - "Card 1: Fill Caller Name, 10-digit Contact No, Area/Village, City/Taluka, District."
+      - "Card 2: Select Animal Classification (Domestic or Wild)."
+      - "Species dropdown dynamically loads matching species options."
+      - "If species is 'Other', custom text field appears to record rare/specific species name."
+      - "Select Gender (Male, Female, Unknown)."
+      - "Card 3: Enter incident cause and clinical symptoms/discrimination notes."
+      - "Card 4: Select initial status, enter treatment provided, and voluntary contribution."
+      - "Submit button activates loading spinner to prevent double submissions."
+      - "Backend executes atomic increment via models/Counter.js to guarantee non-colliding ID."
+      - "Saves case to MongoDB, creates CASE_CREATE audit log, and redirects to /success/:reg_no."
+
+  - id: "flow_06_records_search_filter"
+    name: "Records Search, Filtering & Case Management"
+    route: "GET /view, GET /api/cases"
+    template: "view.html"
+    access: "Authenticated Staff"
+    steps:
+      - "Displays paginated data table of all non-archived cases."
+      - "Universal Search queries Reg No, Caller Name, Contact No, and Species simultaneously."
+      - "Multi-Filter combines Animal Type, Case Status, Start Date, and End Date."
+      - "Server executes optimized indexed query and returns records with pagination metadata."
+      - "Row Actions: View Details Modal, Quick Status Changer, Edit Case, Print Case."
+
+  - id: "flow_07_clinical_print"
+    name: "Streamlined Single-Page Clinical Sheet Printing"
+    route: "GET /print/:reg_no"
+    template: "print_case.html"
+    access: "Authenticated Staff"
+    steps:
+      - "Loads full case document and formatted rescue address."
+      - "Renders A4 single-page clinical card without overflowing 12-row tables."
+      - "Header: JVD Logo, Edufun Foundation Trust, 24/7 Helpline 97272-97187, Address."
+      - "Summary Bar: Reg No, Admission Date & Time, Status Badge, Animal Classification."
+      - "Grid: Patient Profile (Species, Gender, Type, Contribution) + Rescuer Details."
+      - "Full Incident Cause and Treatment Administered blocks."
+      - "Compact 3-row clinical follow-up observation box for physical doctor notes."
+      - "Official Signatures: Prepared By, Attending Veterinarian, Hospital Authority."
+      - "Actions: Window Print / Save as PDF, or Capture High-Res PNG Screenshot."
+
+  - id: "flow_08_data_exports"
+    name: "Filtered Excel & PDF Export Engine"
+    route: "GET /api/export/excel, GET /api/export/pdf"
+    access: "HEAD Administrator Only"
+    steps:
+      - "Head administrator clicks Export Excel or Export PDF on view.html."
+      - "Transfers currently selected search and filter query parameters to export endpoint."
+      - "Excel: exceljs streams .xlsx workbook with styled headers, alternating rows, and auto column widths."
+      - "PDF: pdfkit streams A4 landscape vector report with header, summary, case rows, and page numbers."
+      - "Audit logs EXPORT_EXCEL or EXPORT_PDF event with filter details."
+
+  - id: "flow_09_head_administration"
+    name: "Staff Management & Audit Trail Inspection"
+    route: "GET /admin, GET /api/users, PUT /api/users/:id/*, GET /api/audit-logs"
+    template: "admin.html"
+    access: "HEAD Administrator Only"
+    steps:
+      - "Staff Directory Tab: Lists all registered staff members."
+      - "Role Management: Promote Care Employee to Head Administrator or demote to Employee."
+      - "Account Control: Toggle account status between Active and Blocked/Suspended."
+      - "Audit Logs Tab: Search and paginate immutable system audit logs with actor, IP, action, and timestamp."
+
+  - id: "flow_10_staff_profile"
+    name: "Staff Profile & Secure Sign-Out"
+    route: "GET /profile, GET /logout"
+    template: "profile.html"
+    access: "Authenticated Staff"
+    steps:
+      - "Displays user avatar, full name, username, official email, assigned role, and account status."
+      - "Clicking Logout records LOGOUT audit event, destroys server session, clears cookie, and redirects to Home."
+
+# ==============================================================================
+# OPERATIONAL TROUBLESHOOTING RUNBOOK ("WHEN SOMETHING DOES NOT WORK")
+# ==============================================================================
+troubleshooting_runbook:
+
+  - error_code: "ERR_GOOGLE_OAUTH_NOT_CONFIGURED"
+    symptom: "Clicking 'Continue with Google' redirects back with: 'Google OAuth 2.0 is not configured on this server'."
+    root_cause: "Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET in .env file."
+    action_to_take:
+      step_1: "Go to Google Cloud Console (https://console.cloud.google.com/) — it is 100% free."
+      step_2: "Create a project named 'JVD-CRM'."
+      step_3: "Navigate to APIs & Services > OAuth consent screen. Select User Type 'Internal' (for Google Workspace) or 'External'."
+      step_4: "Navigate to APIs & Services > Credentials > Create Credentials > OAuth client ID."
+      step_5: "Select 'Web application'. Under 'Authorized redirect URIs', add: http://127.0.0.1:5000/auth/google/callback"
+      step_6: "Open .env in the project folder and paste your keys:
+               GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+               GOOGLE_CLIENT_SECRET=GOCSPX-your-secret
+               GOOGLE_CALLBACK_URL=http://127.0.0.1:5000/auth/google/callback
+               ALLOWED_DOMAIN=edufunfoundation.in"
+      step_7: "Restart server: node server.js"
+
+  - error_code: "ERR_UNAUTHORIZED_EMAIL_DOMAIN"
+    symptom: "Google login rejected with: 'Access restricted: Only @edufunfoundation.in accounts are authorized'."
+    root_cause: "Staff attempted to log in using a personal @gmail.com or third-party email."
+    action_to_take:
+      step_1: "Staff must sign in using their official @edufunfoundation.in Google Workspace email."
+      step_2: "If you need to test with another domain (e.g. gmail.com) during local testing, open .env and change:
+               ALLOWED_DOMAIN=gmail.com
+               Or leave empty to allow any domain:
+               ALLOWED_DOMAIN="
+      step_3: "Restart server: node server.js"
+
+  - error_code: "ERR_EMPLOYEE_CANNOT_EXPORT_OR_ADMIN"
+    symptom: "Clicking Excel/PDF Export gives 403 Forbidden, or /admin shows 'Access Denied'."
+    root_cause: "User account has the standard 'employee' role. Bulk exports and user management are strictly HEAD-only."
+    action_to_take:
+      step_1: "Log in with an existing Head Administrator account."
+      step_2: "Navigate to http://127.0.0.1:5000/admin."
+      step_3: "In the Staff Directory table, locate the employee and click 'Promote to Head'."
+      step_4: "Alternatively, set HEAD_ADMIN_EMAIL=your-email@edufunfoundation.in in .env before registering."
+
+  - error_code: "ERR_MONGODB_ECONNREFUSED"
+    symptom: "Server startup fails with: 'ECONNREFUSED 127.0.0.1:27017' or MongoServerError."
+    root_cause: "Local MongoDB service is stopped or MongoDB Atlas connection string is invalid."
+    action_to_take:
+      step_1: "For Local MongoDB on Windows, open PowerShell as Admin and run: net start MongoDB"
+      step_2: "For MongoDB Atlas free cloud database, verify .env has valid MONGODB_URI:
+               MONGODB_URI=mongodb+srv://user:password@cluster0.xxxx.mongodb.net/jvd_crm?retryWrites=true&w=majority"
+      step_3: "In MongoDB Atlas web console, navigate to Network Access and verify IP 0.0.0.0/0 is whitelisted."
+
+  - error_code: "ERR_PORT_IN_USE"
+    symptom: "Server fails to start with: 'Error: listen EADDRINUSE: address already in use :::5000'."
+    root_cause: "Another Node.js instance or background service is occupying port 5000."
+    action_to_take:
+      step_1: "Option A: Change PORT in .env to 5001 (PORT=5001) and visit http://127.0.0.1:5001/."
+      step_2: "Option B: Kill the process in PowerShell:
+               Get-Process -Id (Get-NetTCPConnection -LocalPort 5000).OwningProcess | Stop-Process -Force"
+
+  - error_code: "ERR_SPECIES_NOT_IN_LIST"
+    symptom: "The animal or bird being registered is not available in the dropdown."
+    root_cause: "Rare, exotic, or regional wild species."
+    action_to_take:
+      step_1: "In Case Entry (/entry), select Animal Classification (Domestic or Wild)."
+      step_2: "In the Species dropdown, select 'Other'."
+      step_3: "A custom text field 'Custom / Other Species' appears immediately."
+      step_4: "Type the exact animal name (e.g. Camel, Star Tortoise, Falcon, Hedgehog)."
+      step_5: "Submit the form. The custom species is permanently stored in the case record."
+
+  - error_code: "ERR_EXPORT_FILE_BLOCKED"
+    symptom: "Browser does not download Excel or PDF when clicking the export buttons."
+    root_cause: "Browser popup blocker or ad blocker intercepting blob download."
+    action_to_take:
+      step_1: "Ensure you are logged in as a HEAD administrator."
+      step_2: "Check your browser address bar for a blocked popup/download icon and click 'Always allow downloads from this site'."
+      step_3: "Alternatively, right click 'Excel Export' > 'Open link in new tab'."
+
+  - error_code: "ERR_PRINT_LAYOUT_SPILL"
+    symptom: "Print preview shows two pages instead of a single compact clinical card."
+    root_cause: "Browser print preview has default margins or headers/footers enabled."
+    action_to_take:
+      step_1: "On /print/:reg_no, click '🖨 Print / Save as PDF'."
+      step_2: "In print settings: Layout = Portrait, Paper Size = A4."
+      step_3: "Set Margins = 'Default' or 'None'."
+      step_4: "Uncheck 'Headers and footers' in more settings."
+      step_5: "Or click '📸 Screenshot' to download a crystal-clear PNG image."
+
+  - error_code: "ERR_SESSION_TIMEOUT"
+    symptom: "User is redirected to login with 'Session expired'."
+    root_cause: "24-hour security timeout has lapsed."
+    action_to_take:
+      step_1: "Log back in at http://127.0.0.1:5000/login using Google Workspace."
+      step_2: "To extend session lifetime, modify maxAge in server.js (line 50)."
+
+# ==============================================================================
+# SYSTEM HEALTH CHECK & AUTOMATED TEST COMMANDS
+# ==============================================================================
+commands:
+  run_all_api_tests: "npm test"
+  test_atomic_counter_concurrency: "node scripts/test_models.js"
+  test_template_rendering: "node scripts/test_templates.js"
+  verify_live_health: "curl.exe http://127.0.0.1:5000/api/health"
+  start_server: "node server.js"
