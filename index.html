@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jivdaya Vatsalya Dham – Veterinary Care & Animal CRM</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.href='style.css';"/>
+</head>
+<body>
+
+<!-- ════ NAVBAR (Unified across all pages) ════ -->
+<nav class="navbar">
+  <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
+    <div class="nav-logo">
+      <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
+    </div>
+    <span class="nav-name">
+      Jivdaya Vatsalya Dham
+      <small>Edufun Foundation Trust</small>
+    </span>
+  </a>
+  <div class="nav-links">
+    <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link active">Home</a>
+    <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link">Dashboard</a>
+    {% if current_user %}
+      <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="nav-link">Case Entry</a>
+      {% if current_user.role == 'head' %}
+        <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
+      {% endif %}
+      <span class="user-badge">
+        👤 {{ current_user.full_name }}
+        <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}">
+          {{ current_user.role }}
+        </span>
+      </span>
+      <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">Logout</a>
+    {% else %}
+      <div class="nav-auth">
+        <a href="{{ url_for('login') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">🔑 Staff Login</a>
+        <a href="{{ url_for('register') if url_for is defined else 'register.html' }}" class="btn btn-primary btn-sm">📝 Register</a>
+      </div>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-wrap">
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ 'error' if cat == 'error' else 'success' }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ════ HERO ════ -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <span class="hero-badge">🐾 Edufun Foundation Trust • Veterinary Hospital</span>
+    <h1 class="hero-title">Jivdaya Vatsalya Dham</h1>
+    <p class="hero-sub">
+      Hospital &amp; Shelter House for Injured and Sick Animals and Birds.<br/>
+      Nurturing vulnerable lives with compassionate veterinary treatment, rehabilitation, and care.
+    </p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;">
+      {% if current_user %}
+        <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="btn btn-primary btn-lg">📊 Go to Dashboard</a>
+        <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="btn btn-outline btn-lg">📋 New Case Entry</a>
+      {% else %}
+        <a href="{{ url_for('login') if url_for is defined else 'login.html' }}" class="btn btn-primary btn-lg">🔑 Staff Sign In</a>
+        <a href="{{ url_for('register') if url_for is defined else 'register.html' }}" class="btn btn-outline btn-lg">📝 Staff Register</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-stat">
+      <div class="icon">🐶</div>
+      <div class="label">Domestic Animals</div>
+    </div>
+    <div class="hero-stat">
+      <div class="icon">🦌</div>
+      <div class="label">Wild Wildlife</div>
+    </div>
+    <div class="hero-stat">
+      <div class="icon">🕊️</div>
+      <div class="label">Rescued Birds</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ WHAT WE DO ════ -->
+<section class="about-section">
+  <h2 class="section-title">Comprehensive Animal Care CRM</h2>
+  <div class="about-grid">
+    <div class="about-card">
+      <span class="icon">📞</span>
+      <h3>24/7 Emergency Rescue</h3>
+      <p>Receive, log, and triage emergency calls 24/7 for injured or sick domestic and wild animals.</p>
+    </div>
+    <div class="about-card">
+      <span class="icon">📋</span>
+      <h3>Structured Case Entry</h3>
+      <p>Log complete caller info, GPS/address, animal species, incident causes, and immediate treatment.</p>
+    </div>
+    <div class="about-card">
+      <span class="icon">💉</span>
+      <h3>Veterinary Treatment</h3>
+      <p>Track site treatments, surgical admissions to JVD shelter hospital, recovery observations, and doctor signs.</p>
+    </div>
+    <div class="about-card">
+      <span class="icon">📊</span>
+      <h3>Records &amp; Audit Reports</h3>
+      <p>Real-time search, historical filtering, exportable Excel sheets, and official medical case sheets.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════ LOCATION & HELPLINE ════ -->
+<section style="background:var(--green-900);padding:44px 24px;text-align:center;border-top:1px solid rgba(255,255,255,.1);">
+  <div style="max-width:900px;margin:0 auto;color:rgba(255,255,255,.9);line-height:1.9;font-size:.95rem;">
+    <p style="margin-bottom:8px;">
+      <strong style="color:var(--amber-400);">📍 Hospital Location:</strong>
+      NH-168, Dhanera Khimat Highway, At: Samarvada Village, Ta: Dhanera &nbsp;|&nbsp; 
+      <strong style="color:var(--amber-400);">📞 Helpline:</strong> 97272-97187
+    </p>
+    <p>
+      <strong style="color:var(--amber-400);">🏢 Head Office:</strong>
+      38, Navgrah Society, Behind Madhusudan Plaza, Dhanera, Dist: Banaskantha, Gujarat. Pin: 385310
+    </p>
+  </div>
+</section>
+
+<!-- ════ STATUS BAR (Unified across all pages) ════ -->
+<footer class="status-bar">
+  <div class="sb-item">📧 info@edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">📞 97272-97187</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🌐 edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🕐 24/7 Emergency Helpline</div>
+</footer>
+
+</body>
+</html>

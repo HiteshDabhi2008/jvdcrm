@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Staff Registration – Jivdaya Vatsalya Dham CRM</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.href='style.css';"/>
+</head>
+<body>
+
+<!-- ════ NAVBAR (Unified across all pages) ════ -->
+<nav class="navbar">
+  <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
+    <div class="nav-logo">
+      <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
+    </div>
+    <span class="nav-name">
+      Jivdaya Vatsalya Dham
+      <small>Edufun Foundation Trust</small>
+    </span>
+  </a>
+  <div class="nav-links">
+    <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
+    <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link">Dashboard</a>
+    <div class="nav-auth">
+      <a href="{{ url_for('login') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">🔑 Staff Sign In</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-wrap">
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ 'error' if cat == 'error' else 'success' }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ════ AUTH WRAPPER ════ -->
+<div class="auth-wrap">
+  <div class="auth-card">
+
+    <div class="auth-logo">
+      <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
+      <h2>Create Staff Account</h2>
+      <p>Register to access the JVD Veterinary Case System</p>
+    </div>
+
+    <!-- Google Sign-Up with organization restriction -->
+    <div style="text-align:center;margin-bottom:6px;">
+      <div class="domain-badge">🔒 @edufunfoundation.in accounts get instant access</div>
+    </div>
+    <a href="{{ url_for('google.login') if url_for is defined else '/auth/google' }}" class="btn-google">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
+      Register with Google (@edufunfoundation.in)
+    </a>
+
+    <div class="or-divider">or register with credentials</div>
+
+    <!-- Registration Form -->
+    <form method="POST" action="{{ url_for('register') if url_for is defined else '/register' }}">
+      <div class="form-group">
+        <label class="form-label" for="full_name">Staff Full Name <span class="req">*</span></label>
+        <input class="form-control" type="text" id="full_name" name="full_name"
+               placeholder="Enter your full name" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="username">Staff Username <span class="req">*</span></label>
+        <input class="form-control" type="text" id="username" name="username"
+               placeholder="Choose a unique username" autocomplete="username" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="email">Official Email (optional)</label>
+        <input class="form-control" type="email" id="email" name="email"
+               placeholder="staff@edufunfoundation.in"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="role">Assigned Staff Role <span class="req">*</span></label>
+        <select class="form-control" id="role" name="role" required>
+          <option value="employee">Care Employee (Case Entry &amp; Lookup)</option>
+          <option value="head">Head Administrator (Full CRM &amp; Export Access)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="password">Password <span class="req">*</span></label>
+          <input class="form-control" type="password" id="password" name="password"
+                 placeholder="Min 6 characters" autocomplete="new-password" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="confirm_password">Confirm Password <span class="req">*</span></label>
+          <input class="form-control" type="password" id="confirm_password" name="confirm_password"
+                 placeholder="Repeat password" autocomplete="new-password" required/>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" type="submit" style="margin-top:6px;">Create Account →</button>
+    </form>
+
+    <div class="auth-divider"></div>
+    <div class="auth-switch">
+      Already have an account? <a href="{{ url_for('login') if url_for is defined else 'login.html' }}">Sign in here</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ STATUS BAR (Unified across all pages) ════ -->
+<footer class="status-bar">
+  <div class="sb-item">📧 info@edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">📞 97272-97187</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🌐 edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🕐 24/7 Emergency Helpline</div>
+</footer>
+
+</body>
+</html>

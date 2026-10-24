@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – Jivdaya Vatsalya Dham CRM</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"
+    onerror="this.onerror=null;this.href='style.css';" />
+</head>
+
+<body>
+
+  <!-- ════ NAVBAR (Unified across all pages) ════ -->
+  <nav class="navbar">
+    <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
+      <div class="nav-logo">
+        <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}"
+          onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo" />
+      </div>
+      <span class="nav-name">
+        Jivdaya Vatsalya Dham
+        <small>Edufun Foundation Trust</small>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
+      <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}"
+        class="nav-link active">Dashboard</a>
+      {% if current_user %}
+      <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="nav-link">Case Entry</a>
+      {% if current_user.role == 'head' %}
+      <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
+      {% endif %}
+      <span class="user-badge">
+        👤 {{ current_user.full_name }}
+        <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}">
+          {{ current_user.role }}
+        </span>
+      </span>
+      <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}"
+        class="btn btn-outline btn-sm">Logout</a>
+      {% else %}
+      <div class="nav-auth">
+        <a href="{{ url_for('login') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">🔑
+          Login</a>
+        <a href="{{ url_for('register') if url_for is defined else 'register.html' }}" class="btn btn-primary btn-sm">📝
+          Register</a>
+      </div>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-wrap">
+    {% for cat, msg in messages %}
+    <div class="flash flash-{{ 'error' if cat == 'error' else 'success' }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- ════ DASHBOARD HERO ════ -->
+  <div class="dash-hero">
+    <h1>Welcome to Jivdaya Vatsalya Dham</h1>
+    <p>Veterinary Care &amp; Animal Case Management System</p>
+    {% if current_user %}
+    <div style="margin-top:14px;">
+      <span class="user-badge" style="background:rgba(255,255,255,.16);padding:6px 18px;font-size:.88rem;">
+        👋 Logged in as &nbsp;<strong>{{ current_user.full_name }}</strong>&nbsp;
+        <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}">
+          {{ '👑 Head Administrator' if current_user.role == 'head' else '👷 Care Employee' }}
+        </span>
+      </span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ════ DASHBOARD CONTENT ════ -->
+  <div class="dash-container">
+
+    {% if not current_user %}
+    <!-- Locked state for unauthenticated users -->
+    <div class="dash-locked-msg">
+      <div style="font-size:3.5rem;margin-bottom:12px;">🔒</div>
+      <h3>Authentication Required</h3>
+      <p>Please sign in with your authorized staff credentials or your organization Google account
+        (<strong>@edufunfoundation.in</strong>) to access the veterinary CRM workspace.</p>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+        <a href="{{ url_for('login') if url_for is defined else 'login.html' }}" class="btn btn-primary btn-lg">🔑 Staff
+          Sign In</a>
+        <a href="{{ url_for('register') if url_for is defined else 'register.html' }}" class="btn btn-ghost btn-lg">📝
+          Create Account</a>
+      </div>
+    </div>
+
+    {% else %}
+
+    <!-- ── 1. Statistics Cards ── -->
+    <section aria-label="Veterinary Statistics">
+      <div class="stats-grid">
+        <!-- Total Cases -->
+        <div class="stat-card stat-total">
+          <div class="stat-header">
+            <span class="stat-label">Total Cases</span>
+            <div class="stat-icon">🐾</div>
+          </div>
+          <div class="stat-value" id="statTotal">--</div>
+          <div class="stat-sub">All registered rescues</div>
+        </div>
+
+        <!-- Under Treatment -->
+        <div class="stat-card stat-treatment">
+          <div class="stat-header">
+            <span class="stat-label">Treatment</span>
+            <div class="stat-icon">🏥</div>
+          </div>
+          <div class="stat-value" id="statTreatment">--</div>
+          <div class="stat-sub">Active hospital care</div>
+        </div>
+
+        <!-- Released -->
+        <div class="stat-card stat-release">
+          <div class="stat-header">
+            <span class="stat-label">Released</span>
+            <div class="stat-icon">🕊️</div>
+          </div>
+          <div class="stat-value" id="statReleased">--</div>
+          <div class="stat-sub">Rehabilitated &amp; freed</div>
+        </div>
+
+        <!-- Death -->
+        <div class="stat-card stat-death">
+          <div class="stat-header">
+            <span class="stat-label">Death</span>
+            <div class="stat-icon">🥀</div>
+          </div>
+          <div class="stat-value" id="statDeath">--</div>
+          <div class="stat-sub">Critical casualties</div>
+        </div>
+
+        <!-- Run Away -->
+        <div class="stat-card stat-run">
+          <div class="stat-header">
+            <span class="stat-label">Run Away</span>
+            <div class="stat-icon">🏃</div>
+          </div>
+          <div class="stat-value" id="statRunAway">--</div>
+          <div class="stat-sub">Escaped / untraceable</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 2. Main Action Cards ── -->
+    <section aria-label="Core CRM Actions">
+      <div class="dash-actions-grid">
+        <!-- Action 1: Case Entry -->
+        <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="dash-card card-entry">
+          <div class="dash-card-icon-wrap">📋</div>
+          <h3>Case Entry</h3>
+          <p>Register a new rescue case with caller details, animal species, medical incident, and assigned status — or
+            update an existing case by registration number.</p>
+          <span class="btn btn-green btn-card-action">Register / Edit Case →</span>
+        </a>
+
+        <!-- Action 2: View Records -->
+        {% if current_user.role == 'head' %}
+        <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="dash-card card-records">
+          <div class="dash-card-icon-wrap">📊</div>
+          <h3>View Records</h3>
+          <p>Access full case records database. Filter by date range, animal type, and clinical status. Print medical
+            forms and export to Excel sheet or PDF reports.</p>
+          <span class="btn btn-primary btn-card-action">Manage &amp; Export Records →</span>
+        </a>
+        {% else %}
+        <div class="dash-card locked">
+          <div class="dash-card-icon-wrap" style="background:#e2e8f0;">🔒</div>
+          <h3>View Records</h3>
+          <p>Full case records database, advanced date filtering, and spreadsheet/PDF exports are restricted to Head
+            Administrators.</p>
+          <span class="btn btn-ghost btn-card-action" style="cursor:not-allowed;">🔒 Head Access Only</span>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ── 3. Quick Overview / Recent Activity ── -->
+    <section class="recent-activity-card">
+      <div class="recent-activity-header">
+        <h3>📋 Veterinary Center Information</h3>
+        <span style="font-size:.82rem;color:var(--text-400);">Operating 24/7 Helpline</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;padding:8px 0;">
+        <div
+          style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;">
+          <h4 style="font-size:.9rem;font-weight:700;color:var(--green-900);margin-bottom:6px;">🚑 Emergency Protocols
+          </h4>
+          <p style="font-size:.84rem;color:var(--text-500);line-height:1.6;">Always verify caller contact number and
+            area details before dispatch. For wild animals, ensure safety protocol and district forest officer
+            notification if required.</p>
+        </div>
+        <div
+          style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;">
+          <h4 style="font-size:.9rem;font-weight:700;color:var(--green-900);margin-bottom:6px;">🆔 Auto Registration
+          </h4>
+          <p style="font-size:.84rem;color:var(--text-500);line-height:1.6;">Case registration numbers are generated
+            automatically in strict annual sequence (e.g. <code>JVD.2026.0001</code>). Case sheets can be printed
+            immediately upon saving.</p>
+        </div>
+        <div
+          style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;">
+          <h4 style="font-size:.9rem;font-weight:700;color:var(--green-900);margin-bottom:6px;">📄 Official Exports</h4>
+          <p style="font-size:.84rem;color:var(--text-500);line-height:1.6;">Head accounts can filter case histories by
+            date range or animal species and export formatted spreadsheets or formal clinical audit PDFs.</p>
+        </div>
+      </div>
+    </section>
+
+    {% endif %}
+
+  </div>
+
+  <!-- ════ STATUS BAR (Unified across all pages) ════ -->
+  <footer class="status-bar">
+    <div class="sb-item">📧 info@edufunfoundation.in</div>
+    <div class="sb-div">|</div>
+    <div class="sb-item">📞 97272-97187</div>
+    <div class="sb-div">|</div>
+    <div class="sb-item">🌐 edufunfoundation.in</div>
+    <div class="sb-div">|</div>
+    <div class="sb-item">🕐 24/7 Emergency Helpline</div>
+  </footer>
+
+  <script>
+    // Live statistics loader: checks /api/cases if head user, otherwise displays clean ready indicator
+    document.addEventListener('DOMContentLoaded', () => {
+      const isHead = "{{ 'true' if (current_user and current_user.role == 'head') else 'false' }}" === 'true';
+      if (isHead) {
+        fetch("{{ url_for('api_cases') if url_for is defined else '/api/cases' }}")
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (data && Array.isArray(data.cases)) {
+              const cases = data.cases;
+              document.getElementById('statTotal').textContent = cases.length;
+
+              let under = 0, rel = 0, death = 0, run = 0;
+              cases.forEach(c => {
+                const st = (c.status || '').toLowerCase();
+                if (st.includes('treatment')) under++;
+                else if (st.includes('release')) rel++;
+                else if (st.includes('death')) death++;
+                else if (st.includes('run away')) run++;
+              });
+              document.getElementById('statTreatment').textContent = under;
+              document.getElementById('statReleased').textContent = rel;
+              document.getElementById('statDeath').textContent = death;
+              document.getElementById('statRunAway').textContent = run;
+            }
+          })
+          .catch(() => {
+            // Fallback: keep standard placeholder
+          });
+      }
+    });
+  </script>
+
+</body>
+
+</html>

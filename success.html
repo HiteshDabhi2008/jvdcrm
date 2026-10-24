@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Case Saved – Jivdaya Vatsalya Dham CRM</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.href='style.css';"/>
+</head>
+<body>
+
+<!-- ════ NAVBAR (Unified across all pages) ════ -->
+<nav class="navbar">
+  <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
+    <div class="nav-logo">
+      <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
+    </div>
+    <span class="nav-name">
+      Jivdaya Vatsalya Dham
+      <small>Edufun Foundation Trust</small>
+    </span>
+  </a>
+  <div class="nav-links">
+    <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
+    <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link">Dashboard</a>
+    <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="nav-link">Case Entry</a>
+    {% if current_user and current_user.role == 'head' %}
+      <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
+    {% endif %}
+    {% if current_user %}
+      <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">Logout</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- ════ SUCCESS CARD WRAPPER ════ -->
+<div class="success-wrap">
+  <div class="success-card">
+    <div class="success-icon">✅</div>
+    <h1>Case Registered Successfully!</h1>
+    <p style="color:var(--text-500);font-size:.95rem;margin-top:6px;">
+      The animal rescue case record has been saved securely to the veterinary database.
+    </p>
+
+    <!-- Reg No Box -->
+    <div class="reg-box">
+      <small>Assigned Case Registration Number</small>
+      {{ reg_no if reg_no is defined else '' }}
+    </div>
+
+    {% if case is defined and case %}
+      <div style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-size:.88rem;color:var(--text-700);margin-bottom:12px;line-height:1.8;">
+        Caller: <strong>{{ case.caller_name }}</strong> &nbsp;|&nbsp;
+        Species: <strong>{{ case.species }}</strong> &nbsp;|&nbsp;
+        Status: <strong>{{ case.status }}</strong>
+      </div>
+    {% endif %}
+
+    <div class="success-actions">
+      <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="btn btn-primary">➕ New Case</a>
+      <a href="{{ url_for('print_case', reg_no=reg_no) if (url_for is defined and reg_no is defined) else ('/print/' + (reg_no if reg_no is defined else '')) }}" class="btn btn-blue">🖨 Print Case Form</a>
+      {% if current_user and current_user.role == 'head' %}
+        <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="btn btn-green">📊 View Records</a>
+      {% endif %}
+      <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="btn btn-ghost">← Dashboard</a>
+    </div>
+  </div>
+</div>
+
+<!-- ════ STATUS BAR (Unified across all pages) ════ -->
+<footer class="status-bar">
+  <div class="sb-item">📧 info@edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">📞 97272-97187</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🌐 edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🕐 24/7 Emergency Helpline</div>
+</footer>
+
+</body>
+</html>

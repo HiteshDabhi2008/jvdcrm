@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Case Entry – Jivdaya Vatsalya Dham CRM</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.href='style.css';"/>
+</head>
+<body>
+
+<!-- ════ NAVBAR (Unified across all pages) ════ -->
+<nav class="navbar">
+  <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
+    <div class="nav-logo">
+      <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
+    </div>
+    <span class="nav-name">
+      Jivdaya Vatsalya Dham
+      <small>Edufun Foundation Trust</small>
+    </span>
+  </a>
+  <div class="nav-links">
+    <a href="{{ url_for('home') if url_for is defined else 'index.html' }}" class="nav-link">Home</a>
+    <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="nav-link">Dashboard</a>
+    <a href="{{ url_for('entry') if url_for is defined else 'entry.html' }}" class="nav-link active">Case Entry</a>
+    {% if current_user and current_user.role == 'head' %}
+      <a href="{{ url_for('view_records') if url_for is defined else 'view.html' }}" class="nav-link">View Records</a>
+    {% endif %}
+    {% if current_user %}
+      <span class="user-badge">
+        👤 {{ current_user.full_name }}
+        <span class="role-pill {{ 'role-head' if current_user.role == 'head' else 'role-employee' }}">
+          {{ current_user.role }}
+        </span>
+      </span>
+      <a href="{{ url_for('logout') if url_for is defined else 'login.html' }}" class="btn btn-outline btn-sm">Logout</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-wrap">
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ 'error' if cat == 'error' else 'success' }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ════ CASE ENTRY WRAPPER ════ -->
+<div class="entry-wrap">
+
+  <div class="entry-header">
+    <h2>📋 Veterinary Animal Case Entry</h2>
+    <p>Register a new rescue case or update an existing medical record by Registration Number.</p>
+  </div>
+
+  <!-- Mode Toggle (New Case vs Edit by Reg No) -->
+  <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+    <button type="button" class="btn btn-primary" id="btnNew" onclick="setMode('new')">➕ New Animal Case</button>
+    <button type="button" class="btn btn-ghost" id="btnEdit" onclick="setMode('edit')">✏️ Edit Existing by Reg No.</button>
+  </div>
+
+  <!-- Edit Lookup Card (Hidden in New mode) -->
+  <div id="editLookup" class="card hidden" style="border-left:4px solid var(--amber-500);background:#fffdf9;">
+    <div class="card-title">🔍 Search Case for Editing</div>
+    <p style="font-size:.88rem;color:var(--text-500);margin-bottom:14px;">
+      Enter the unique case registration number (e.g., <code>JVD.2026.0001</code>) to load existing record details into the form.
+    </p>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <input class="form-control" id="lookupRegNo" placeholder="e.g. JVD.2026.0001" style="max-width:260px;" autocomplete="off"/>
+      <button type="button" class="btn btn-green" onclick="loadCase()">🔍 Load Record</button>
+    </div>
+    <div id="lookupMsg" style="margin-top:12px;font-size:.9rem;font-weight:600;"></div>
+  </div>
+
+  <!-- Registration Number Banner Badge -->
+  <div id="regBadgeWrap">
+    <div class="reg-badge">
+      <span>🆔 Case No: <strong id="regNoText">{{ reg_no if reg_no is defined else 'Auto-Assigned' }}</strong></span>
+      <small id="regNoLabel">New Case (Generated automatically on save)</small>
+    </div>
+  </div>
+
+  <!-- ════ MULTI-SECTION CASE FORM ════ -->
+  <form id="caseForm" method="POST" action="{{ url_for('entry_save') if url_for is defined else '/entry/save' }}">
+    <input type="hidden" name="reg_no" id="hiddenRegNo" value=""/>
+
+    <!-- ── CARD 1: Caller Information ── -->
+    <div class="entry-card">
+      <div class="entry-card-title">
+        <span>👤 Card 1 — Caller Information &amp; Rescue Location</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="f_caller_name">Caller Full Name <span class="req">*</span></label>
+          <input class="form-control" name="caller_name" id="f_caller_name" placeholder="Enter caller's full name" required/>
+          <div class="form-helper">Person reporting the injured or sick animal</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f_contact_no">Contact Number <span class="req">*</span></label>
+          <input class="form-control" name="contact_no" id="f_contact_no" type="tel" maxlength="10"
+                 pattern="[0-9]{10}" placeholder="Enter 10-digit mobile number"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'')" required/>
+          <div class="form-helper">10-digit phone number for rescue coordination</div>
+        </div>
+      </div>
+
+      <div class="form-section">Rescue Address Details</div>
+      <div class="form-row-4">
+        <div class="form-group">
+          <label class="form-label" for="f_village">Village / Area <span class="req">*</span></label>
+          <input class="form-control" name="village" id="f_village" placeholder="e.g. Samarvada" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f_city">Taluka / City <span class="req">*</span></label>
+          <input class="form-control" name="city" id="f_city" placeholder="e.g. Dhanera" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f_district">District <span class="req">*</span></label>
+          <input class="form-control" name="district" id="f_district" placeholder="e.g. Banaskantha" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f_state">State</label>
+          <input class="form-control" name="state" id="f_state" value="Gujarat"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CARD 2: Animal Information ── -->
+    <div class="entry-card">
+      <div class="entry-card-title">
+        <span>🐾 Card 2 — Animal Classification &amp; Identity</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="f_animal_type">Animal Classification <span class="req">*</span></label>
+          <select class="form-control" name="animal_type" id="f_animal_type" onchange="updateSpeciesDropdown()" required>
+            <option value="">Select Domestic or Wild…</option>
+            <option value="Domestic">Domestic Animal / Pet</option>
+            <option value="Wild">Wild Wildlife / Protected Species</option>
+          </select>
+          <div class="form-helper">Select type to load applicable species list</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f_species">Species Name <span class="req">*</span></label>
+          <select class="form-control" name="species" id="f_species" required>
+            <option value="">Select animal type first…</option>
+          </select>
+          <div class="form-helper">Identified species of the animal or bird</div>
+        </div>
+      </div>
+      <div class="form-group" style="max-width:280px;">
+        <label class="form-label" for="f_sex">Animal Gender / Sex <span class="req">*</span></label>
+        <select class="form-control" name="sex" id="f_sex" required>
+          <option value="">Select Gender…</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Unknown">Unknown / Not Determined</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ── CARD 3: Case Information ── -->
+    <div class="entry-card">
+      <div class="entry-card-title">
+        <span>🩺 Card 3 — Incident Cause &amp; Clinical Description</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f_cause">Cause of Injury / Illness <span class="req">*</span></label>
+        <input class="form-control" name="cause" id="f_cause"
+               placeholder="e.g. Road accident, Stray animal bite, Dehydration, Wire trap, Wing fracture…" required/>
+        <div class="form-helper">Primary incident or suspected cause of distress</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f_discrimination">Case Description &amp; Special Observations</label>
+        <textarea class="form-control" name="discrimination" id="f_discrimination" rows="3"
+                  placeholder="Breed characteristics, visible wounds, behavioral signs, rescue notes…"></textarea>
+        <div class="form-helper">Recorded for medical case history and doctor evaluation</div>
+      </div>
+    </div>
+
+    <!-- ── CARD 4: Treatment ── -->
+    <div class="entry-card">
+      <div class="entry-card-title">
+        <span>💉 Card 4 — Medical Treatment &amp; Medication Given</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f_treatment">Treatment Provided <span class="req">*</span></label>
+        <textarea class="form-control" name="treatment" id="f_treatment" rows="3"
+                  placeholder="Antiseptic dressing, pain relief injections, antibiotics, splinting, IV fluids, emergency first-aid given…" required></textarea>
+        <div class="form-helper">Detailed record of medications, surgical interventions, and on-site care</div>
+      </div>
+    </div>
+
+    <!-- ── CARD 5: Contribution ── -->
+    <div class="entry-card">
+      <div class="entry-card-title">
+        <span>🤝 Card 5 — Contribution &amp; Community Support</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f_contribution">Contribution (Donation / Medicines / Support)</label>
+        <input class="form-control" name="contribution" id="f_contribution"
+               placeholder="e.g. ₹500 cash donation, medicines provided, shelter support…"/>
+        <div class="form-helper">Optional voluntary support received from caller or local community</div>
+      </div>
+    </div>
+
+    <!-- ── CARD 6: Case Status ── -->
+    <div class="entry-card">
+      <div class="entry-card-title">
+        <span>🏷️ Card 6 — Current Medical Status</span>
+      </div>
+      <div class="form-group" style="max-width:380px;">
+        <label class="form-label" for="f_status">Case Status <span class="req">*</span></label>
+        <select class="form-control" name="status" id="f_status" required>
+          <option value="">Select status…</option>
+          <option value="Under Treatment">Under Treatment (Admitted / Active)</option>
+          <option value="Site Treatment">Site Treatment (Treated on Spot)</option>
+          <option value="JVD Treatment">JVD Treatment (Hospital Shelter Care)</option>
+          <option value="Release">Release (Fully Recovered &amp; Released)</option>
+          <option value="Death">Death (Casualty)</option>
+          <option value="Run Away">Run Away (Escaped)</option>
+        </select>
+        <div class="form-helper">Current stage in the veterinary care lifecycle</div>
+      </div>
+    </div>
+
+    <!-- ── FORM ACTIONS BAR ── -->
+    <div class="entry-actions-bar">
+      <button class="btn btn-primary btn-lg" type="submit" id="submitBtn">💾 Save Animal Case</button>
+      <button class="btn btn-ghost btn-lg" type="button" onclick="clearForm()">🗑 Clear Form</button>
+      <a href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}" class="btn btn-ghost btn-lg" style="margin-left:auto;">← Cancel</a>
+    </div>
+
+  </form>
+
+</div>
+
+<!-- ════ STATUS BAR (Unified across all pages) ════ -->
+<footer class="status-bar">
+  <div class="sb-item">📧 info@edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">📞 97272-97187</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🌐 edufunfoundation.in</div>
+  <div class="sb-div">|</div>
+  <div class="sb-item">🕐 24/7 Emergency Helpline</div>
+</footer>
+
+<script>
+// Species dictionary
+const speciesMap = {
+  "Domestic": [
+    "Dog","Cow","Buffalo","Puppy","Goat","Sheep","Horse",
+    "Donkey","Rabbit","Cat","Ox","Duck","Hen","Turkey",
+    "Parrot","Love Bird","Cockatiel","Budgerigar"
+  ],
+  "Wild": [
+    "Nilgai","Monkey","Monitor Lizard","Snake","Fox","Jackal",
+    "Sparrow","Pigeon","Kabar (Myna)","Peacock","Eagle",
+    "Deer","Leopard","Wolf","Bear"
+  ]
+};
+
+function updateSpeciesDropdown(preSelect){
+  const type = document.getElementById('f_animal_type').value;
+  const sel  = document.getElementById('f_species');
+  sel.innerHTML = '';
+  if(!type){
+    sel.innerHTML = '<option value="">Select animal type first…</option>';
+    return;
+  }
+  const list = speciesMap[type] || [];
+  const blank = document.createElement('option');
+  blank.value = '';
+  blank.text = 'Select species…';
+  sel.appendChild(blank);
+  list.forEach(s => {
+    const o = document.createElement('option');
+    o.value = o.text = s;
+    if(preSelect && s === preSelect) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+// Mode toggle: New Case vs Edit by Reg No
+let currentMode = 'new';
+
+function setMode(mode){
+  currentMode = mode;
+  const lookup    = document.getElementById('editLookup');
+  const badge     = document.getElementById('regBadgeWrap');
+  const btnNew    = document.getElementById('btnNew');
+  const btnEdit   = document.getElementById('btnEdit');
+  const form      = document.getElementById('caseForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const label     = document.getElementById('regNoLabel');
+
+  if(mode === 'new'){
+    lookup.classList.add('hidden');
+    badge.style.display = '';
+    btnNew.className  = 'btn btn-primary';
+    btnEdit.className = 'btn btn-ghost';
+    form.action       = "{{ url_for('entry_save') if url_for is defined else '/entry/save' }}";
+    submitBtn.textContent = '💾 Save Animal Case';
+    label.textContent = 'New Case (Generated automatically on save)';
+    clearForm();
+  } else {
+    lookup.classList.remove('hidden');
+    badge.style.display = 'none';
+    btnNew.className  = 'btn btn-ghost';
+    btnEdit.className = 'btn btn-primary';
+    form.action       = "{{ url_for('entry_update') if url_for is defined else '/entry/update' }}";
+    submitBtn.textContent = '💾 Update Animal Case';
+    document.getElementById('lookupRegNo').focus();
+  }
+}
+
+// Load case by Reg No
+function loadCase(){
+  const rn  = document.getElementById('lookupRegNo').value.trim();
+  const msg = document.getElementById('lookupMsg');
+  if(!rn){
+    msg.style.color = 'var(--red)';
+    msg.textContent = '⚠️ Please enter a registration number.';
+    return;
+  }
+  msg.style.color = 'var(--text-500)';
+  msg.textContent = '🔍 Searching case records…';
+
+  const lookupUrl = "{{ url_for('entry_lookup') if url_for is defined else '/entry/lookup' }}";
+  fetch(`${lookupUrl}?reg_no=${encodeURIComponent(rn)}`)
+    .then(r => r.json())
+    .then(data => {
+      if(data.found){
+        const c = data.case;
+        document.getElementById('f_caller_name').value    = c.caller_name || '';
+        document.getElementById('f_contact_no').value     = c.contact_no || '';
+        document.getElementById('f_village').value        = c.village || '';
+        document.getElementById('f_city').value           = c.city || '';
+        document.getElementById('f_district').value       = c.district || '';
+        document.getElementById('f_state').value          = c.state || 'Gujarat';
+        document.getElementById('f_animal_type').value    = c.animal_type || '';
+        updateSpeciesDropdown(c.species);
+        document.getElementById('f_sex').value            = c.sex || '';
+        document.getElementById('f_cause').value          = c.cause || '';
+        document.getElementById('f_discrimination').value = c.discrimination || '';
+        document.getElementById('f_treatment').value      = c.treatment || '';
+        document.getElementById('f_contribution').value   = c.contribution || '';
+        document.getElementById('f_status').value         = c.status || '';
+        document.getElementById('hiddenRegNo').value      = c.reg_no;
+
+        document.getElementById('regBadgeWrap').style.display = '';
+        document.getElementById('regNoText').textContent  = c.reg_no;
+        document.getElementById('regNoLabel').textContent = 'Editing Loaded Case Record';
+        msg.style.color = '#15803d';
+        msg.textContent = `✅ Case record "${c.reg_no}" loaded successfully. Update fields below and click Update Case.`;
+      } else {
+        msg.style.color = 'var(--red)';
+        msg.textContent = `⚠️ Case "${rn}" not found in database.`;
+      }
+    })
+    .catch(() => {
+      msg.style.color = 'var(--red)';
+      msg.textContent = '⚠️ Server connection error. Please try again.';
+    });
+}
+
+function clearForm(){
+  const ids = ['f_caller_name','f_contact_no','f_village','f_city','f_district',
+               'f_cause','f_discrimination','f_treatment','f_contribution'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('f_animal_type').value = '';
+  document.getElementById('f_species').innerHTML = '<option value="">Select animal type first…</option>';
+  document.getElementById('f_sex').value    = '';
+  document.getElementById('f_status').value = '';
+  document.getElementById('hiddenRegNo').value = '';
+  document.getElementById('lookupMsg').textContent = '';
+}
+
+// Auto-load case if ?reg_no= is present in URL
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const regNo = urlParams.get('reg_no');
+  if(regNo){
+    setMode('edit');
+    const input = document.getElementById('lookupRegNo');
+    if(input){
+      input.value = regNo;
+      loadCase();
+    }
+  }
+});
+</script>
+
+</body>
+</html>

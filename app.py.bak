@@ -1,0 +1,424 @@
+"""
+JIVDAYA VATSALYA DHAM (JVD) — Final Production Backend
+=======================================================
+Cloud-based system for edufunfoundation.in
+
+AUTHENTICATION:
+  - Google OAuth 2.0 restricted to @edufunfoundation.in domain
+  - info@edufunfoundation.in auto-assigned "head" role
+  - Standard username+password login also supported
+  - Passwords hashed with werkzeug (never plain-text)
+
+DATABASE (Cloud — Google Sheets):
+  - Sheet 1 "Users"  — username, password_hash, full_name, role, email, created_at
+  - Sheet 2 "Cases"  — all case fields in order
+
+ROLES:
+  - head     -> Case Entry + View Records (full access + export)
+  - employee -> Case Entry only (add new OR edit existing case by Reg No)
+"""
+
+import os, json
+from datetime import datetime
+from functools import wraps
+
+from flask import (Flask, render_template, request, redirect,
+                   url_for, flash, session, jsonify)
+from werkzeug.security import generate_password_hash, check_password_hash
+try:
+    from flask_dance.contrib.google import make_google_blueprint, google
+    HAS_FLASK_DANCE = True
+except ImportError:
+    HAS_FLASK_DANCE = False
+    google = None
+
+try:
+    import gspread
+    from google.oauth2.service_account import Credentials
+    HAS_SHEETS = True
+except ImportError:
+    HAS_SHEETS = False
+
+# ── App ────────────────────────────────────────────────────
+app = Flask(__name__, static_folder='static', template_folder='.')
+app.secret_key = os.environ.get("FLASK_SECRET_KEY","jvd_edufun_dev_2026")
+os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT","1")
+
+ALLOWED_DOMAIN = "edufunfoundation.in"
+HEAD_EMAIL     = "info@edufunfoundation.in"
+SHEET_ID       = os.environ.get("SHEET_ID","")
+
+STATUS_OPTIONS = ["Under Treatment","Site Treatment","JVD Treatment",
+                  "Release","Death","Run Away"]
+
+SPECIES_MAP = {
+    "Domestic": ["Dog","Cow","Buffalo","Puppy","Goat","Sheep","Horse",
+                 "Donkey","Rabbit","Cat","Ox","Duck","Hen","Turkey",
+                 "Parrot","Love Bird","Cockatiel","Budgerigar"],
+    "Wild":     ["Nilgai","Monkey","Monitor Lizard","Snake","Fox","Jackal",
+                 "Sparrow","Pigeon","Kabar (Myna)","Peacock","Eagle",
+                 "Deer","Leopard","Wolf","Bear"],
+}
+
+# ── Google OAuth ───────────────────────────────────────────
+if HAS_FLASK_DANCE:
+    google_bp = make_google_blueprint(
+        client_id     = os.environ.get("GOOGLE_CLIENT_ID","YOUR_CLIENT_ID"),
+        client_secret = os.environ.get("GOOGLE_CLIENT_SECRET","YOUR_CLIENT_SECRET"),
+        scope         = ["openid","email","profile"],
+        redirect_url  = "/auth/google/callback",
+    )
+    app.register_blueprint(google_bp, url_prefix="/auth")
+
+# ── Sheets connection ──────────────────────────────────────
+_gc = None
+_wb = None
+
+def get_sheet(sheet_name):
+    global _gc, _wb
+    if not HAS_SHEETS:
+        return None
+    try:
+        if _gc is None:
+            scopes = ["https://spreadsheets.google.com/feeds",
+                      "https://www.googleapis.com/auth/drive"]
+            sa_file = os.path.join(os.path.dirname(__file__), "service_account.json")
+            if os.path.exists(sa_file):
+                creds = Credentials.from_service_account_file(sa_file, scopes=scopes)
+            else:
+                sa_json = os.environ.get("SERVICE_ACCOUNT_JSON","{}")
+                creds   = Credentials.from_service_account_info(json.loads(sa_json), scopes=scopes)
+            _gc = gspread.authorize(creds)
+        if _wb is None:
+            _wb = _gc.open_by_key(SHEET_ID) if SHEET_ID else _gc.open("JVD_Database")
+        return _wb.worksheet(sheet_name)
+    except Exception as e:
+        print(f"[JVD] Sheet error ({sheet_name}): {e}")
+        return None
+
+def _using_sheets():
+    return bool(SHEET_ID) and (get_sheet("Users") is not None)
+
+# ── Local fallback ─────────────────────────────────────────
+_local_users = {"admin":{"username":"admin",
+    "password_hash":generate_password_hash("admin123"),
+    "full_name":"Admin (Head)","role":"head",
+    "email":HEAD_EMAIL,"created_at":datetime.now().isoformat()}}
+_local_cases = {}
+
+USERS_COLS = ["username","password_hash","full_name","role","email","created_at"]
+CASES_COLS = ["reg_no","caller_name","village","city","district","state",
+              "contact_no","animal_type","species","sex","cause",
+              "discrimination","treatment","contribution","post_time",
+              "status","last_edited_by","last_edited_at"]
+
+def ensure_sheets():
+    ws_names = [s.title for s in _wb.worksheets()]
+    if "Users" not in ws_names:
+        us = _wb.add_worksheet("Users", rows=1000, cols=10)
+        us.append_row(USERS_COLS)
+        us.append_row(["admin",generate_password_hash("admin123"),
+                        "Admin (Head)","head",HEAD_EMAIL,
+                        datetime.now().isoformat(timespec="seconds")])
+    if "Cases" not in ws_names:
+        cs = _wb.add_worksheet("Cases", rows=5000, cols=20)
+        cs.append_row(CASES_COLS)
+
+# ── User helpers ───────────────────────────────────────────
+def get_all_users():
+    if _using_sheets():
+        ws = get_sheet("Users")
+        return ws.get_all_records() if ws else []
+    return list(_local_users.values())
+
+def find_user(username):
+    for u in get_all_users():
+        if str(u.get("username","")).lower() == username.lower(): return u
+    return None
+
+def find_user_by_email(email):
+    for u in get_all_users():
+        if str(u.get("email","")).lower() == email.lower(): return u
+    return None
+
+def add_user(username, password, full_name, role, email=""):
+    now = datetime.now().isoformat(timespec="seconds")
+    row = [username, generate_password_hash(password), full_name, role, email, now]
+    if _using_sheets():
+        ws = get_sheet("Users")
+        if ws: ws.append_row(row)
+    else:
+        _local_users[username] = dict(zip(USERS_COLS, row))
+
+def upsert_google_user(email, full_name):
+    ex = find_user_by_email(email)
+    if ex: return ex
+    role     = "head" if email.lower() == HEAD_EMAIL else "employee"
+    username = email.split("@")[0]
+    add_user(username, os.urandom(16).hex(), full_name, role, email)
+    return find_user_by_email(email)
+
+# ── Case helpers ───────────────────────────────────────────
+def get_all_cases():
+    if _using_sheets():
+        ws = get_sheet("Cases")
+        if not ws: return []
+        return [r for r in ws.get_all_records() if r.get("reg_no")]
+    return list(_local_cases.values())
+
+def next_reg_no():
+    cases = get_all_cases()
+    year  = datetime.now().year
+    count = sum(1 for c in cases if str(c.get("reg_no","")).startswith(f"JVD.{year}.")) + 1
+    return f"JVD.{year}.{count:04d}"
+
+def add_case(data, edited_by):
+    now    = datetime.now().isoformat(timespec="seconds")
+    reg_no = next_reg_no()
+    row_d  = {"reg_no":reg_no,"caller_name":data.get("caller_name",""),
+              "village":data.get("village",""),"city":data.get("city",""),
+              "district":data.get("district",""),"state":data.get("state","Gujarat"),
+              "contact_no":data.get("contact_no",""),"animal_type":data.get("animal_type",""),
+              "species":data.get("species",""),"sex":data.get("sex",""),
+              "cause":data.get("cause",""),"discrimination":data.get("discrimination",""),
+              "treatment":data.get("treatment",""),"contribution":data.get("contribution",""),
+              "post_time":now,"status":data.get("status",""),
+              "last_edited_by":edited_by,"last_edited_at":now}
+    if _using_sheets():
+        ws = get_sheet("Cases")
+        if ws: ws.append_row([row_d[c] for c in CASES_COLS])
+    else:
+        _local_cases[reg_no] = row_d
+    return reg_no
+
+def update_case(reg_no, data, edited_by):
+    now = datetime.now().isoformat(timespec="seconds")
+    if _using_sheets():
+        ws = get_sheet("Cases")
+        if not ws: return False
+        try:
+            cell = ws.find(reg_no, in_column=1)
+        except:
+            return False
+        if not cell: return False
+        editable = ["caller_name","village","city","district","state","contact_no",
+                    "animal_type","species","sex","cause","discrimination",
+                    "treatment","contribution","status"]
+        for col_name in editable:
+            if data.get(col_name) is not None:
+                ws.update_cell(cell.row, CASES_COLS.index(col_name)+1, data[col_name])
+        ws.update_cell(cell.row, CASES_COLS.index("last_edited_by")+1, edited_by)
+        ws.update_cell(cell.row, CASES_COLS.index("last_edited_at")+1, now)
+        return True
+    else:
+        if reg_no not in _local_cases: return False
+        for k,v in data.items():
+            if k in _local_cases[reg_no]: _local_cases[reg_no][k] = v
+        _local_cases[reg_no]["last_edited_by"] = edited_by
+        _local_cases[reg_no]["last_edited_at"] = now
+        return True
+
+def get_case_by_regno(reg_no):
+    for c in get_all_cases():
+        if str(c.get("reg_no","")).strip().upper() == str(reg_no).strip().upper():
+            return c
+    return None
+
+# ── Auth helpers ───────────────────────────────────────────
+def current_user():
+    if "username" in session:
+        return {"username":session["username"],"full_name":session.get("full_name",""),
+                "role":session.get("role","employee"),"email":session.get("email","")}
+    return None
+
+def set_session(user):
+    session["username"]  = user["username"]
+    session["full_name"] = user.get("full_name","")
+    session["role"]      = user.get("role","employee")
+    session["email"]     = user.get("email","")
+
+def login_required(roles=None):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            u = current_user()
+            if not u:
+                flash("⚠️ Please log in to continue.","error")
+                return redirect(url_for("login"))
+            if roles and u["role"] not in roles:
+                flash("⛔ Access denied.","error")
+                return redirect(url_for("dashboard"))
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@app.context_processor
+def inject_globals():
+    return {"current_user":current_user(),"status_options":STATUS_OPTIONS,"species_map":SPECIES_MAP}
+
+# ── Routes ─────────────────────────────────────────────────
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
+
+@app.route("/login", methods=["GET","POST"])
+def login():
+    if current_user(): return redirect(url_for("dashboard"))
+    if request.method == "POST":
+        username = request.form.get("username","").strip()
+        password = request.form.get("password","")
+        if not username or not password:
+            flash("⚠️ Please enter username and password.","error")
+            return render_template("login.html")
+        user = find_user(username)
+        if user and check_password_hash(str(user.get("password_hash","")), password):
+            set_session(user)
+            flash(f"✅ Welcome back, {user['full_name']}!","success")
+            return redirect(url_for("dashboard"))
+        flash("⚠️ Invalid username or password.","error")
+    return render_template("login.html")
+
+@app.route("/register", methods=["GET","POST"])
+def register():
+    if current_user(): return redirect(url_for("dashboard"))
+    if request.method == "POST":
+        username  = request.form.get("username","").strip()
+        password  = request.form.get("password","")
+        confirm   = request.form.get("confirm_password","")
+        full_name = request.form.get("full_name","").strip()
+        role      = request.form.get("role","employee")
+        email     = request.form.get("email","").strip().lower()
+        errors = []
+        if not username or not password or not full_name: errors.append("Fill all required fields.")
+        if password != confirm: errors.append("Passwords do not match.")
+        if len(password) < 6: errors.append("Password must be at least 6 characters.")
+        if find_user(username): errors.append("Username already taken.")
+        if errors:
+            for e in errors: flash(f"⚠️ {e}","error")
+            return render_template("register.html")
+        add_user(username, password, full_name, role, email)
+        flash("✅ Account created! Please log in.","success")
+        return redirect(url_for("login"))
+    return render_template("register.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("👋 Logged out successfully.","success")
+    return redirect(url_for("dashboard"))
+
+@app.route("/auth/google/callback")
+def google_callback():
+    if not HAS_FLASK_DANCE or not google or not google.authorized:
+        flash("⚠️ Google authorisation is not configured in this environment. Please sign in with username & password.","error")
+        return redirect(url_for("login"))
+    try:
+        resp = google.get("/oauth2/v2/userinfo")
+        if not resp.ok:
+            flash("⚠️ Could not get Google profile.","error")
+            return redirect(url_for("login"))
+        info  = resp.json()
+        email = info.get("email","").lower()
+        name  = info.get("name","Google User")
+        if not email.endswith(f"@{ALLOWED_DOMAIN}"):
+            flash(f"⛔ Only @{ALLOWED_DOMAIN} accounts are allowed.","error")
+            return redirect(url_for("login"))
+        user = upsert_google_user(email, name)
+        set_session(user)
+        flash(f"✅ Signed in with Google as {name}!","success")
+        return redirect(url_for("dashboard"))
+    except Exception as e:
+        flash(f"⚠️ Google sign-in error: {e}","error")
+        return redirect(url_for("login"))
+
+@app.route("/entry")
+@login_required(roles=["head","employee"])
+def entry():
+    return render_template("entry.html", reg_no=next_reg_no())
+
+@app.route("/entry/save", methods=["POST"])
+@login_required(roles=["head","employee"])
+def entry_save():
+    reg_no = add_case(request.form.to_dict(), current_user()["username"])
+    flash(f"✅ Case registered! Reg. No.: {reg_no}","success")
+    return redirect(url_for("entry_success", reg_no=reg_no))
+
+@app.route("/entry/success/<reg_no>")
+@login_required(roles=["head","employee"])
+def entry_success(reg_no):
+    return render_template("success.html", case=get_case_by_regno(reg_no), reg_no=reg_no)
+
+@app.route("/entry/lookup")
+@login_required(roles=["head","employee"])
+def entry_lookup():
+    reg_no = request.args.get("reg_no","").strip()
+    case   = get_case_by_regno(reg_no)
+    if case: return jsonify({"found":True,"case":dict(case)})
+    return jsonify({"found":False})
+
+@app.route("/entry/update", methods=["POST"])
+@login_required(roles=["head","employee"])
+def entry_update():
+    reg_no = request.form.get("reg_no","").strip()
+    ok     = update_case(reg_no, request.form.to_dict(), current_user()["username"])
+    flash(f"✅ Case {reg_no} updated." if ok else f"⚠️ Case {reg_no} not found.","success" if ok else "error")
+    return redirect(url_for("entry"))
+
+@app.route("/view")
+@login_required(roles=["head"])
+def view_records():
+    return render_template("view.html")
+
+@app.route("/api/cases")
+@login_required(roles=["head"])
+def api_cases():
+    cases     = get_all_cases()
+    from_date = request.args.get("from_date","")
+    to_date   = request.args.get("to_date","")
+    contact   = request.args.get("contact_no","").strip().lower()
+    a_type    = request.args.get("animal_type","").strip()
+    species   = request.args.get("species","").strip().lower()
+    status    = request.args.get("status","").strip()
+    def in_range(pt):
+        if not from_date and not to_date: return True
+        try:
+            d = datetime.fromisoformat(str(pt)).date()
+            ok = True
+            if from_date: ok = ok and d >= datetime.fromisoformat(from_date).date()
+            if to_date:   ok = ok and d <= datetime.fromisoformat(to_date).date()
+            return ok
+        except: return True
+    filtered = []
+    for c in cases:
+        if not in_range(c.get("post_time","")): continue
+        if contact and contact not in str(c.get("contact_no","")).lower(): continue
+        if a_type  and c.get("animal_type","") != a_type: continue
+        if species and species not in str(c.get("species","")).lower(): continue
+        if status  and c.get("status","") != status: continue
+        filtered.append(dict(c))
+    filtered.sort(key=lambda x: str(x.get("post_time","")), reverse=True)
+    return jsonify({"count":len(filtered),"cases":filtered})
+
+@app.route("/print/<reg_no>")
+@login_required(roles=["head","employee"])
+def print_case(reg_no):
+    case = get_case_by_regno(reg_no)
+    if not case:
+        flash("⚠️ Case not found.","error")
+        return redirect(url_for("dashboard"))
+    address = ", ".join(filter(None,[case.get("village"),case.get("city"),
+                                      case.get("district"),case.get("state")]))
+    return render_template("print_case.html", case=case, address=address)
+
+if __name__ == "__main__":
+    print("[JVD] Starting — sheet:", SHEET_ID or "LOCAL FALLBACK")
+    if SHEET_ID:
+        try:
+            get_sheet("Users"); ensure_sheets()
+        except Exception as e:
+            print(f"[JVD] Sheet init: {e}")
+    app.run(debug=True, port=5000)
