@@ -1,10 +1,10 @@
 # JVD CRM — Project State & Session Memory
 
 ## Current Status
-- **Current Phase**: Phase 3 (Modular Backend Architecture & Security Middleware)
-- **Previous Phase**: Phase 2 (Database Models & Atomic Registration Counter) — COMPLETED
+- **Current Phase**: Phase 4 & 5 (Common UI Components, Pages & Dashboard Integration)
+- **Previous Phase**: Phase 3 (Modular Backend Architecture & Security Middleware) — COMPLETED
 - **Branch**: main
-- **Last Verification**: Phase 2 verified via scripts/test_models.js: 10 parallel atomic concurrent reg numbers generated without collision; User, Case, Counter, AuditLog models validated.
+- **Last Verification**: 13/13 API integration tests passed via scripts/test_api_endpoints.js.
 
 ## Completed Work
 1. Thoroughly audited all existing files: `index.html`, `dashboard.html`, `entry.html`, `view.html`, `login.html`, `register.html`, `print_case.html`, `success.html`, `style.css`, `server.js`, `models/`, `scripts/`.
@@ -18,11 +18,31 @@
 9. Implemented enhanced `models/Case.js` with indexes, validation, archive flag.
 10. Implemented `models/AuditLog.js` with comprehensive action tracking.
 11. Verified all models with `scripts/test_models.js`.
+12. Modularized backend architecture:
+   - `middleware/security.js` (Helmet, query sanitizer)
+   - `middleware/rateLimiter.js` (Auth and API limiters)
+   - `middleware/auth.js` (Session authentication and account status checks)
+   - `middleware/rbac.js` (HEAD vs EMPLOYEE role checks)
+   - `middleware/errorHandler.js` (Centralized safe error handling)
+   - `services/auditService.js` (Automated audit logging)
+   - `services/exportService.js` (ExcelJS workbook and PDFKit landscape streaming)
+   - `controllers/caseController.js` (Case CRUD, query, status update, archive)
+   - `controllers/dashboardController.js` (MongoDB aggregation pipeline metrics)
+   - `controllers/exportController.js` (Excel and PDF exports)
+   - `controllers/adminController.js` (Staff accounts and audit logs)
+   - `controllers/authController.js` (Google OAuth 2.0 and local credentials)
+   - `routes/apiRoutes.js` (Mounted on `/api`)
+   - `routes/webRoutes.js` (Mounted on `/`)
+   - `server.js` (Unified server configuration)
+13. Verified complete backend with `scripts/test_api_endpoints.js`.
 
 ## Immediate Next Steps
-- Execute Phase 3: Modularize backend:
-  - Create `middleware/` (auth, rbac, security, rateLimiter, errorHandler)
-  - Create `services/` (auditService, exportService)
-  - Create `controllers/` (authController, caseController, dashboardController, exportController, adminController)
-  - Create `routes/` (apiRoutes, webRoutes)
+- Implement frontend UI enhancements:
+  - Create `profile.html` (Staff profile and status)
+  - Create `admin.html` (User management and audit log viewer for HEAD)
+  - Enhance `dashboard.html` with all required status cards, recent cases table, and live DB updates
+  - Enhance `view.html` with server-side pagination, details modal, quick status change, and server export buttons
+  - Enhance `entry.html` with reset dialog and clean validation feedback
+  - Harmonize responsive navbar with mobile hamburger menu across all pages
+
 
