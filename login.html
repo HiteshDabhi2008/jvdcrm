@@ -56,7 +56,7 @@
     <div style="text-align:center;margin-bottom:6px;">
       <div class="domain-badge">🔒 @{{ allowed_domain or 'edufunfoundation.in' }} accounts only</div>
     </div>
-    <a href="{{ url_for('google.login') if url_for is defined else '/auth/google' }}" class="btn-google" id="googleBtn" onclick="this.innerHTML='<span class=\"spinner-inline\"></span> Connecting to Google...';">
+    <a href="{{ url_for('google.login') if url_for is defined else '/auth/google' }}" class="btn-google" id="googleBtn">
       <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
       Continue with Google Workspace
     </a>
@@ -100,6 +100,13 @@
 </footer>
 
 <script>
+const googleBtn = document.getElementById('googleBtn');
+if (googleBtn) {
+  googleBtn.addEventListener('click', function() {
+    this.innerHTML = '<span class="spinner-inline"></span> Connecting to Google...';
+  });
+}
+
 document.getElementById('loginForm').addEventListener('submit', () => {
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
