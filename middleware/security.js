@@ -12,6 +12,7 @@ const securityHeaders = helmet({
                 "https://apis.google.com",
                 "https://www.gstatic.com"
             ],
+            scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: [
                 "'self'", 
                 "'unsafe-inline'",

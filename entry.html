@@ -141,7 +141,7 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label" for="f_animal_type">Animal Classification <span class="req">*</span></label>
-          <select class="form-control" name="animal_type" id="f_animal_type" onchange="updateSpeciesDropdown()" required>
+          <select class="form-control" name="animal_type" id="f_animal_type" required>
             <option value="">Select Domestic or Wild…</option>
             <option value="Domestic">Domestic Animal / Pet</option>
             <option value="Wild">Wild Wildlife / Protected Species</option>
@@ -154,6 +154,11 @@
             <option value="">Select animal type first…</option>
           </select>
           <div class="form-helper">Identified species of the animal or bird</div>
+        </div>
+        <div class="form-group" id="customSpeciesWrap" style="display:none;">
+          <label class="form-label" for="f_custom_species">Custom / Other Species <span class="req">*</span></label>
+          <input class="form-control" type="text" id="f_custom_species" placeholder="Enter species name (e.g. Camel, Falcon, Calf)"/>
+          <div class="form-helper">Specify the exact animal or bird species</div>
         </div>
       </div>
       <div class="form-group" style="max-width:280px;">
@@ -258,36 +263,67 @@
 // Species dictionary
 const speciesMap = {
   "Domestic": [
-    "Dog","Cow","Buffalo","Puppy","Goat","Sheep","Horse",
-    "Donkey","Rabbit","Cat","Ox","Duck","Hen","Turkey",
-    "Parrot","Love Bird","Cockatiel","Budgerigar"
+    "Dog","Cow","Buffalo","Puppy","Calf","Goat","Sheep","Horse",
+    "Donkey","Rabbit","Cat","Kitten","Ox","Duck","Hen","Turkey",
+    "Parrot","Love Bird","Cockatiel","Budgerigar","Camel","Pig","Other"
   ],
   "Wild": [
     "Nilgai","Monkey","Monitor Lizard","Snake","Fox","Jackal",
-    "Sparrow","Pigeon","Kabar (Myna)","Peacock","Eagle",
-    "Deer","Leopard","Wolf","Bear"
+    "Sparrow","Pigeon","Kabar (Myna)","Peacock","Eagle","Hawk","Owl",
+    "Deer","Leopard","Wolf","Bear","Chinkara","Star Tortoise","Other"
   ]
 };
 
 function updateSpeciesDropdown(preSelect){
-  const type = document.getElementById('f_animal_type').value;
+  const typeEl = document.getElementById('f_animal_type');
+  const type = typeEl ? typeEl.value : '';
   const sel  = document.getElementById('f_species');
+  if(!sel) return;
   sel.innerHTML = '';
   if(!type){
     sel.innerHTML = '<option value="">Select animal type first…</option>';
+    checkCustomSpecies();
     return;
   }
-  const list = speciesMap[type] || [];
+  const list = speciesMap[type] || ["Other"];
   const blank = document.createElement('option');
   blank.value = '';
   blank.text = 'Select species…';
   sel.appendChild(blank);
+  let matched = false;
   list.forEach(s => {
     const o = document.createElement('option');
     o.value = o.text = s;
-    if(preSelect && s === preSelect) o.selected = true;
+    if(preSelect && s.toLowerCase() === preSelect.trim().toLowerCase()){
+      o.selected = true;
+      matched = true;
+    }
     sel.appendChild(o);
   });
+  if(preSelect && !matched){
+    const customOpt = document.createElement('option');
+    customOpt.value = customOpt.text = preSelect;
+    customOpt.selected = true;
+    sel.appendChild(customOpt);
+  }
+  checkCustomSpecies();
+}
+
+function checkCustomSpecies(){
+  const sel = document.getElementById('f_species');
+  const customWrap = document.getElementById('customSpeciesWrap');
+  const customInput = document.getElementById('f_custom_species');
+  if(!sel || !customWrap) return;
+  if(sel.value === 'Other'){
+    customWrap.style.display = 'block';
+    if(customInput) customInput.required = true;
+  } else {
+    customWrap.style.display = 'none';
+    if(customInput){
+      customInput.required = false;
+      customInput.value = '';
+    }
+  }
 }
 
 // Mode toggle: New Case vs Edit by Reg No
@@ -391,8 +427,18 @@ function clearForm(force = false){
   document.getElementById('lookupMsg').textContent = '';
 }
 
-// Auto-load case if ?reg_no= is present in URL, and prevent double submission
+// Auto-load case if ?reg_no= is present in URL, attach listeners, and prevent double submission
 document.addEventListener('DOMContentLoaded', () => {
+  const animalType = document.getElementById('f_animal_type');
+  if (animalType) {
+    animalType.addEventListener('change', () => updateSpeciesDropdown());
+  }
+
+  const speciesSel = document.getElementById('f_species');
+  if (speciesSel) {
+    speciesSel.addEventListener('change', checkCustomSpecies);
+  }
+
   const urlParams = new URLSearchParams(window.location.search);
   const regNo = urlParams.get('reg_no');
   if(regNo){
@@ -404,10 +450,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Double submit protection
+  // Handle custom species substitution and double submit protection
   const caseForm = document.getElementById('caseForm');
   if (caseForm) {
     caseForm.addEventListener('submit', (e) => {
+      const sel = document.getElementById('f_species');
+      const customInput = document.getElementById('f_custom_species');
+      if (sel && sel.value === 'Other' && customInput && customInput.value.trim()) {
+        const customVal = customInput.value.trim();
+        let customOpt = sel.querySelector(`option[value="${customVal}"]`);
+        if (!customOpt) {
+          customOpt = document.createElement('option');
+          customOpt.value = customOpt.text = customVal;
+          sel.appendChild(customOpt);
+        }
+        sel.value = customVal;
+      }
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
         submitBtn.disabled = true;

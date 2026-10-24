@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Jivdaya Vatsalya Dham – Veterinary Care & Animal CRM</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.href='style.css';"/>
+  <title>Jivdaya Vatsalya Dham – Veterinary Care &amp; Animal CRM</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') if url_for is defined else 'style.css' }}"/>
 </head>
 <body>
 

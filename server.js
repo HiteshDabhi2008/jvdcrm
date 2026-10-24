@@ -35,7 +35,7 @@ app.use(express.json({ limit: '2mb' }));
 
 // ── 3. Static Files ──
 app.use('/static', express.static(path.join(__dirname, 'static')));
-app.use(express.static(path.join(__dirname, '.')));
+app.use(express.static(path.join(__dirname, '.'), { index: false }));
 
 // ── 4. Session Configuration ──
 const isProduction = process.env.NODE_ENV === 'production';

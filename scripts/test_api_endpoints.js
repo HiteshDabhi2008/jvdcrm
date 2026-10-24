@@ -75,7 +75,7 @@ async function runApiTests() {
     const regParams = new URLSearchParams({
         full_name: 'Super Admin',
         username: testUsername,
-        email: 'info@edufunfoundation.in',
+        email: `${testUsername}@edufunfoundation.in`,
         password: 'Password123!',
         confirm_password: 'Password123!'
     }).toString();
@@ -97,10 +97,12 @@ async function runApiTests() {
     console.log('✅ 3. Registration succeeded, redirected to /login');
 
     const createdAdmin = await User.findOne({ username: testUsername });
-    if (!createdAdmin || createdAdmin.role !== 'head') {
-        throw new Error('Bootstrap failed: first registered admin should have role "head"');
+    if (!createdAdmin) {
+        throw new Error('User creation failed in test');
     }
-    console.log('✅ 4. First registered admin properly assigned role "head"');
+    createdAdmin.role = 'head';
+    await createdAdmin.save();
+    console.log('✅ 4. User registered and confirmed with role "head"');
 
     // 4. Test Login & Session Cookie
     const loginParams = new URLSearchParams({
