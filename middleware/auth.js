@@ -12,8 +12,8 @@ function isAuthenticated(req, res, next) {
     }
     
     // Check if this is an API call vs browser page visit
-    if (req.path.startsWith('/api/')) {
-        return res.status(401).json({ error: 'Authentication required. Please sign in.' });
+    if ((req.originalUrl || req.path).startsWith('/api/') || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+        return res.status(401).json({ success: false, error: 'Authentication required. Please sign in.' });
     }
 
     req.flash('error', '⚠️ Please sign in to access the system.');

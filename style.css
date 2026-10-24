@@ -2266,3 +2266,195 @@ textarea.form-control {
   to { transform: rotate(360deg); }
 }
 
+/* ═════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVENESS & NAVBAR TOGGLE
+   ═════════════════════════════════════════════════════════════════ */
+.nav-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--white);
+  font-size: 1.4rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  line-height: 1;
+  transition: var(--trans-base);
+}
+
+.nav-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 991px) {
+  .nav-toggle {
+    display: inline-block;
+  }
+
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 72px;
+    left: 0;
+    right: 0;
+    background: var(--green-900);
+    border-bottom: 3px solid var(--amber-500);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 24px;
+    gap: 8px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    z-index: 999;
+  }
+
+  .nav-links.open {
+    display: flex;
+    animation: fadeInDown 0.2s ease forwards;
+  }
+
+  .nav-links .nav-link {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    border-radius: var(--radius-sm);
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .nav-links .nav-auth {
+    flex-direction: column;
+    margin-left: 0;
+    gap: 8px;
+    margin-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 12px;
+    width: 100%;
+  }
+
+  .nav-links .nav-auth .btn,
+  .nav-links .user-badge {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 16px;
+  }
+
+  .nav-name {
+    font-size: 1rem;
+  }
+
+  .hero h1 {
+    font-size: 2rem !important;
+  }
+
+  .entry-wrap,
+  .dashboard-wrap,
+  .view-wrap,
+  .auth-wrap,
+  .success-wrap {
+    padding: 86px 16px 70px !important;
+  }
+
+  .case-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .filter-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .status-bar {
+    font-size: 0.72rem;
+    flex-wrap: wrap;
+    gap: 6px;
+    height: auto;
+    padding: 6px 12px;
+    line-height: 1.4;
+  }
+
+  .modal-dialog {
+    width: 95% !important;
+    margin: 16px auto !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .filter-grid,
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .entry-header h2 {
+    font-size: 1.4rem !important;
+  }
+
+  .paper {
+    padding: 12px 14px !important;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   PRINT MEDIA STYLES (Single Page A4 Clinical Sheet)
+   ═════════════════════════════════════════════════════════════════ */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .navbar,
+  .print-controls,
+  .status-bar,
+  .flash-wrap,
+  .nav-toggle,
+  .btn {
+    display: none !important;
+  }
+
+  .paper {
+    box-shadow: none !important;
+    border: 1.5px solid #000000 !important;
+    margin: 0 auto !important;
+    padding: 16px 20px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-doc-title {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .case-meta-bar {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 8mm 8mm 8mm 8mm;
+  }
+}
+

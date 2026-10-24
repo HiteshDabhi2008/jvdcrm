@@ -4,7 +4,12 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard – Jivdaya Vatsalya Dham CRM</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.href='style.css';"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') if url_for is defined else 'style.css' }}"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 </head>
 <body>
 
@@ -12,7 +17,7 @@
 <nav class="navbar">
   <a class="nav-brand" href="{{ url_for('dashboard') if url_for is defined else 'dashboard.html' }}">
     <div class="nav-logo">
-      <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
+      <img src="/static/JVD_logo.jpeg" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
     </div>
     <span class="nav-name">
       Jivdaya Vatsalya Dham

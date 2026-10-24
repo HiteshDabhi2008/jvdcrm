@@ -6,8 +6,9 @@ function errorHandler(err, req, res, next) {
     const userMessage = err.expose || statusCode < 500 ? err.message : 'An unexpected server error occurred. Please try again later.';
 
     // If API request, return JSON
-    if (req.path.startsWith('/api/')) {
+    if ((req.originalUrl || req.path).startsWith('/api/') || (req.headers.accept && req.headers.accept.includes('application/json'))) {
         return res.status(statusCode).json({
+            success: false,
             error: userMessage,
             code: err.code || 'SERVER_ERROR'
         });

@@ -306,3 +306,85 @@ commands:
   test_template_rendering: "node scripts/test_templates.js"
   verify_live_health: "curl.exe http://127.0.0.1:5000/api/health"
   start_server: "node server.js"
+
+# ==============================================================================
+# USER EXPERIENCE JOURNEYS (DETAILED STEP-BY-STEP ACTIONS)
+# ==============================================================================
+user_experience_journeys:
+  - journey_id: "JRN_AUTH_GOOGLE_ONBOARDING"
+    title: "Staff Onboarding & Google Authentication"
+    actor: "Staff / Rescuer"
+    trigger: "Visiting /register or /login"
+    actions:
+      - step: 1
+        description: "Click 'Continue with Google Workspace' button."
+        visual_feedback: "Button displays inline spinner 'Connecting to Google...' and disables to prevent duplicate submissions."
+      - step: 2
+        description: "Select official Google Workspace account (@edufunfoundation.in)."
+        validation: "Domain strictly enforced. Any non-organization account is blocked with clear alert banner."
+      - step: 3
+        description: "Redirected to /dashboard with green welcome alert."
+
+  - journey_id: "JRN_CASE_REGISTRATION"
+    title: "New Animal Case Admission"
+    actor: "Care Employee / Attending Staff"
+    trigger: "Click 'Case Entry' or '➕ New Case'"
+    actions:
+      - step: 1
+        description: "Enter Caller Name and 10-digit Contact Phone Number."
+        visual_feedback: "Registration badge shows 'Assigned on save (atomic sequence counter)'."
+      - step: 2
+        description: "Enter Village (e.g. Samarvada), City (Dhanera), District (Banaskantha), State (Gujarat)."
+      - step: 3
+        description: "Select Animal Type: Domestic or Wild."
+        visual_feedback: "Species dropdown automatically populates relevant species."
+      - step: 4
+        description: "If 'Other' selected, dynamic custom text field slides open to accept custom animal/bird name."
+      - step: 5
+        description: "Fill injury cause, case notes, initial medications, and admission status."
+      - step: 6
+        description: "Click '💾 Save Animal Case'. Button turns to 'Saving Case...' spinner."
+      - step: 7
+        description: "Browser instantly loads /success/:reg_no displaying assigned Case ID in bold with shortcuts."
+
+  - journey_id: "JRN_CLINICAL_PRINT"
+    title: "Printing Single-Page A4 Medical Record"
+    actor: "Veterinarian / Hospital Staff"
+    trigger: "Click '🖨 Print Case Form' on success screen or from record view"
+    actions:
+      - step: 1
+        description: "Clinical sheet loads in streamlined single-page A4 format without empty tables."
+      - step: 2
+        description: "Click '🖨 Print / Save as PDF' or press Ctrl+P."
+        visual_feedback: "Browser print preview displays only the official hospital paper; all web navbars and buttons hidden automatically via @media print."
+      - step: 3
+        description: "Alternatively click '📸 Screenshot' to download a 2x retina PNG."
+
+  - journey_id: "JRN_RECORD_SEARCH_AND_INLINE_UPDATE"
+    title: "Search, Multi-Filter & Inline Status Management"
+    actor: "Hospital Staff / Head Admin"
+    trigger: "Visit /view"
+    actions:
+      - step: 1
+        description: "Type in Universal Search box (queries name, phone, reg_no, or injury cause with 350ms debounce)."
+      - step: 2
+        description: "Optionally filter by Date Range, Animal Type, Species, or Status."
+      - step: 3
+        description: "Click inline status dropdown next to any case pill to change status with 1 click."
+        visual_feedback: "Case status pill updates instantly without full page refresh."
+      - step: 4
+        description: "Click '🔍 View' for full modal inspection; click '✏️ Edit' to modify full record."
+      - step: 5
+        description: "Head Admin can click '📥 Export to Excel' or '📄 Export to PDF' for instant report downloads."
+
+  - journey_id: "JRN_MOBILE_NAVIGATION"
+    title: "Mobile / Tablet Responsive Access"
+    actor: "Field Rescuer on Smartphone"
+    trigger: "Viewing CRM on mobile screen (<992px)"
+    actions:
+      - step: 1
+        description: "Tap top-right hamburger icon '☰'."
+        visual_feedback: "Full-width navigation menu slides down with touch-friendly 44px buttons."
+      - step: 2
+        description: "Tables feature smooth horizontal scrolling without layout distortion."
+

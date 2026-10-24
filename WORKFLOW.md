@@ -398,4 +398,153 @@ curl.exe http://127.0.0.1:5000/api/health
 
 ---
 
+## 6. End-to-End User Experience (UX) & Action Journey
+
+This section provides staff members and volunteers with a granular, click-by-click manual so that every action feels clear, intuitive, and error-free.
+
+### Journey 1: Staff Onboarding & Authentication
+1. **Navigating to the Website:**
+   - Open browser and visit: `http://127.0.0.1:5000` (or your cloud URL).
+   - The top navigation bar displays the circular JVD logo, "Jivdaya Vatsalya Dham", and "Edufun Foundation Trust".
+   - Notice the bottom status bar displaying the 24/7 Helpline: `97272-97187` and email: `info@edufunfoundation.in`.
+2. **Onboarding / Registration (`/register`):**
+   - Click **"📝 Register"** or navigate to `/register`.
+   - The screen shows the verified organization badge: `🔒 @edufunfoundation.in accounts only`.
+   - Click **"Continue with Google Workspace"**.
+   - *Visual Feedback:* The button displays an inline spinner with text `Connecting to Google...` and disables to prevent accidental repeated clicks.
+   - Choose your official `@edufunfoundation.in` Google account in the popup dialog.
+   - *Instant Result:* Your account is created with standard role `employee` and you land on the **Dashboard** with a green success message: *"Welcome to Jivdaya Vatsalya Dham CRM!"*.
+   - *Security Guardrail:* If a personal `@gmail.com` is selected, Google authentication is denied and a red alert banner explains: *"Access restricted: You must sign in with an official @edufunfoundation.in account."*
+3. **Daily Sign-In (`/login`):**
+   - Existing staff click **"Continue with Google Workspace"** for one-click passwordless login.
+   - Alternatively, use your staff username and password if assigned by the Head Administrator.
+
+---
+
+### Journey 2: Registering a New Animal Rescue Case (`/entry`)
+1. **Opening the Admission Form:**
+   - Click **"Case Entry"** on the top navigation bar or **"➕ New Case"** on the dashboard.
+   - Observe the green header badge: `New Case (Generated automatically on save)`. The system uses an atomic MongoDB sequence counter, guaranteeing zero duplicate registration numbers even under high concurrency.
+2. **Filling Caller & Rescue Location:**
+   - **Caller Name:** Enter the name of the Good Samaritan or staff rescuer (e.g., `Ramesh Patel`).
+   - **Contact Number:** Enter the 10-digit phone number.
+   - **Rescue Site:** Enter Village (e.g., `Samarvada`), City (`Dhanera`), District (`Banaskantha`), State (`Gujarat`).
+3. **Dynamic Species Selection:**
+   - **Select Animal Type:** Choose either `Domestic` or `Wild`.
+   - *Visual Feedback:* The **Species Dropdown** immediately updates with only the relevant species (e.g. Dog, Cow, Goat, Buffalo for Domestic; Nilgai, Monitor Lizard, Peacock, Jackal for Wild).
+   - **Custom Species / Rare Animal:**
+     - If the animal is not in the standard list, select **"Other"**.
+     - An animated custom text field smoothly slides down: `Enter Custom Species / Bird Name`.
+     - Type the exact name (e.g., `Star Tortoise`, `Nilgai Calf`, `Barn Owl`).
+     - *Automatic Handling:* On submission, this custom name is saved directly into the database record.
+4. **Entering Medical Observations & Initial Care:**
+   - **Cause / Reason:** Select or type the injury cause (e.g., `Wire fence entanglement`, `Vehicular trauma`, `Dehydration / Heat stroke`).
+   - **Case Description:** Provide brief details of the animal's physical condition upon rescue.
+   - **Initial Treatment Administered:** Enter immediate medications, antiseptics, pain relief, or bandage dressings applied.
+   - **Case Status:** Choose initial admission status:
+     - `Under Treatment` (admitted to hospital ward)
+     - `Site Treatment` (treated at rescue location and released)
+     - `JVD Treatment` (intensive veterinary supervision)
+5. **Submitting the Record:**
+   - Click **"💾 Save Animal Case"**.
+   - *Visual Feedback:* The button turns into `<span class="spinner-inline"></span> Saving Case...` and disables itself to protect against double clicks.
+   - *Result:* The browser automatically redirects to the **Success Confirmation Screen** (`/success/:reg_no`).
+
+---
+
+### Journey 3: The Success Confirmation Screen (`/success/:reg_no`)
+- Displays a prominent green confirmation badge and the official assigned registration number:
+  ```
+  ✅ Case Registered Successfully!
+  Assigned Case Registration Number: JVD-2026-0001
+  ```
+- **One-Click Action Buttons:**
+  - **🖨 Print Case Form:** Immediately opens the streamlined A4 Clinical Medical Record Sheet.
+  - **➕ New Case:** Returns to `/entry` with a freshly cleared form for the next patient.
+  - **📊 View Records:** Jumps to the master record search and filter grid.
+  - **← Dashboard:** Returns to the main hospital metrics dashboard.
+
+---
+
+### Journey 4: Printing the Single-Page Clinical Sheet (`/print/:reg_no`)
+1. **Layout & Cleanliness:**
+   - The case sheet is formatted specifically for **A4 Portrait** paper.
+   - Large, empty 12-row treatment tables have been replaced with a streamlined, comprehensive layout:
+     - Official JVD & Edufun Foundation Trust hospital header with registration number `E/1897/BK` and helpline `97272-97187`.
+     - Patient Animal Identity (Species, Category, Sex, Date & Time).
+     - Caller & Rescue Site (Full address, caller name, phone number).
+     - Clinical Assessment & Diagnosis (Cause of admission, physical injury notes).
+     - Primary Treatment & Medications Administered (Clear, readable clinical text block).
+     - Compact 3-row Doctor Follow-Up Progress Tracker for daily ward rounds.
+     - Official Signatures: Attending Veterinarian & Authorized Signatory lines.
+2. **Printing to Paper or PDF:**
+   - Click **"🖨 Print / Save as PDF"** (or press `Ctrl+P`).
+   - The browser print preview dialog opens.
+   - *Automatic CSS Magic:* All website navigation bars, buttons, flash alerts, and status bars are automatically hidden via `@media print`. Only the clean hospital paper is rendered.
+3. **Saving a High-Resolution Image:**
+   - Click **"📸 Screenshot"**.
+   - The page uses `html2canvas` to capture the medical sheet at 2x retina clarity and automatically downloads: `JVD_Case_[reg_no]_[date].png`.
+
+---
+
+### Journey 5: Searching, Filtering & Inline Updates (`/view`)
+1. **Instant Universal Keyword Search:**
+   - In the **Search Keyword** box, type any text (e.g. `Samarvada`, `Ramesh`, `97272`, `Dog`, `JVD-2026`).
+   - The query is debounced by 350ms and instantly queries MongoDB without requiring full page reloads.
+2. **Multi-Parameter Filter Panel:**
+   - Filter by date range (`From Date` and `To Date`).
+   - Filter by category (`Domestic` vs `Wild`).
+   - Filter by specific species or admission status.
+   - Click **"Apply Filters"** or **"Clear All"** to reset.
+3. **Inline One-Click Status Update:**
+   - Each row has a quick status selector next to the colored status badge.
+   - Select a new status (e.g. change `Under Treatment` to `Release`).
+   - *Instant Feedback:* The database updates via `PUT /api/cases/:id/status` and the table refreshes seamlessly with the new status pill!
+4. **Modal Case Inspection:**
+   - Click the **"🔍 View"** button on any case row.
+   - A clean modal slides up showing complete case information, full caller details, formatted treatment notes, registration timestamp, and last-edited audit trail.
+   - Click **"🖨 Print Form"** from within the modal to open the printable sheet in a new tab.
+5. **Editing Existing Records:**
+   - Click **"✏️ Edit"** on any row.
+   - This deep-links to `/entry?reg_no=JVD-2026-0001`.
+   - The form switches to **Edit Mode**, loads all existing field data from the server, and allows instant updates via the **"💾 Update Animal Case"** button.
+6. **Exporting Master Records (Head Admin):**
+   - Click **"📥 Export to Excel (.xlsx)"** to stream an auto-styled Excel file with column widths and headers.
+   - Click **"📄 Export to PDF (.pdf)"** to generate an official multi-page A4 landscape clinical report.
+
+---
+
+### Journey 6: Administrative Management (`/admin`)
+- Accessible exclusively to users with role `head`.
+- **User Management Tab:**
+  - View all registered staff members with Google profile pictures and email addresses.
+  - One-click Role Promotion/Demotion: Switch any staff member between `employee` and `head`.
+  - One-click Account Security: Click `Block Account` to immediately suspend access for departing staff.
+- **Audit Logs Tab:**
+  - Inspect chronological audit logs tracking every `CASE_CREATE`, `CASE_UPDATE`, `CASE_STATUS_CHANGE`, and `USER_REGISTRATION` with user email, timestamp, and IP address.
+- **Database Backup Tab:**
+  - Export full JSON dumps of all hospital cases for offsite data preservation.
+
+---
+
+### Journey 7: Mobile & Tablet Experience
+1. **Responsive Navbar Toggle:**
+   - On screens smaller than 992px, the top navigation links collapse cleanly into a hamburger icon `☰`.
+   - Tap `☰` to open the full-width mobile menu with smooth animation.
+   - Tap `☰` again to close it.
+2. **Touch-Friendly Controls:**
+   - All buttons have minimum 44px touch targets.
+   - Tables feature smooth horizontal scrolling so clinical information is never clipped on smartphones.
+   - Status bar gracefully stacks on mobile devices without overlapping content.
+
+---
+
+### Journey 8: Error Resilience & Graceful Fallbacks
+- **Session Expiration:** If your session expires while viewing records, the application gracefully alerts you and navigates to the sign-in page instead of throwing blank screens.
+- **Offline / Local File Usage:** If any staff member opens an `.html` file directly from a USB stick or Downloads folder (`file:///...`), the CSS and logo automatically load from local fallback files (`style.css` and `JVD_logo.jpeg`) with zero broken styling!
+- **Accidental Form Reset:** Clicking "Clear Form" requires explicit browser confirmation so that typed clinical notes are never accidentally wiped out.
+
+---
+
 *Document compiled and maintained for Edufun Foundation Trust • Jivdaya Vatsalya Dham CRM.*
+

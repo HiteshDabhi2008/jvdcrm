@@ -3,8 +3,8 @@ function isHead(req, res, next) {
         return next();
     }
     
-    if (req.path.startsWith('/api/')) {
-        return res.status(403).json({ error: 'Access denied. Head administrator privileges required.' });
+    if ((req.originalUrl || req.path).startsWith('/api/') || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+        return res.status(403).json({ success: false, error: 'Access denied. Head administrator privileges required.' });
     }
 
     req.flash('error', '⛔ Access denied. Head administrator privileges required.');
@@ -14,8 +14,8 @@ function isHead(req, res, next) {
 function hasRole(...allowedRoles) {
     return (req, res, next) => {
         if (!req.isAuthenticated()) {
-            if (req.path.startsWith('/api/')) {
-                return res.status(401).json({ error: 'Authentication required.' });
+            if ((req.originalUrl || req.path).startsWith('/api/') || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+                return res.status(401).json({ success: false, error: 'Authentication required.' });
             }
             return res.redirect('/login');
         }
@@ -24,8 +24,8 @@ function hasRole(...allowedRoles) {
             return next();
         }
 
-        if (req.path.startsWith('/api/')) {
-            return res.status(403).json({ error: 'Access denied: Insufficient role permissions.' });
+        if ((req.originalUrl || req.path).startsWith('/api/') || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+            return res.status(403).json({ success: false, error: 'Access denied: Insufficient role permissions.' });
         }
 
         req.flash('error', '⛔ Access denied. Insufficient permissions for this action.');
