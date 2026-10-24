@@ -63,133 +63,152 @@
     </div>
     <div class="ph-text">
       <h1>JIVDAYA VATSALYA DHAM</h1>
-      <h3>HOSPITAL AND SHELTER HOUSE FOR INJURED AND SICK ANIMALS AND BIRDS</h3>
-      <p>Location: NH-168, Dhanera Khimat Highway, At: Samarvada Village, Ta: Dhanera &nbsp;|&nbsp; Mb: 97272-97187</p>
-      <p>Head Office: 38, Navgrah Society, Behind Madhusudan Plaza, Dhanera, Dist: Banaskantha. Pin: 385310</p>
-      <p>Email: info@edufunfoundation.in &nbsp;|&nbsp; Website: edufunfoundation.in</p>
+      <h3>VETERINARY HOSPITAL &amp; ANIMAL SHELTER CARE</h3>
+      <p><strong>Edufun Foundation Trust</strong> &bull; Registration No. E/1897/BK</p>
+      <p>Hospital: NH-168, Dhanera Khimat Highway, At: Samarvada Village, Ta: Dhanera &bull; Helpline: 97272-97187</p>
+      <p>Head Office: 38, Navgrah Society, Behind Madhusudan Plaza, Dhanera, Banaskantha, Gujarat - 385310</p>
+      <p>Email: info@edufunfoundation.in &bull; Web: edufunfoundation.in</p>
     </div>
   </div>
 
-  <!-- Case Info Table -->
-  <table class="info-table">
-    <tr>
-      <td width="20%"><b>Case No.</b></td>
-      <td width="30%">: <span class="line">{{ case.reg_no if case is defined else '' }}</span></td>
-      <td width="18%"><b>Date</b></td>
-      <td>: <span class="line">{{ case.post_time.slice(0, 10) if (case is defined and case.post_time) else '' }}</span></td>
-    </tr>
-    <tr>
-      <td><b>Animal Type</b></td>
-      <td>: <span class="line">{{ case.animal_type if case is defined else '' }}</span></td>
-      <td><b>Species</b></td>
-      <td>: <span class="line">{{ case.species if case is defined else '' }}</span></td>
-    </tr>
-    <tr>
-      <td><b>Sex</b></td>
-      <td>: <span class="line">{{ case.sex if case is defined else '' }}</span></td>
-      <td><b>Weight</b></td>
-      <td>: <span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
-    </tr>
-    <tr>
-      <td><b>Status</b></td>
-      <td>: <span class="line">{{ case.status if case is defined else '' }}</span></td>
-      <td><b>Reg. No.</b></td>
-      <td>: <span class="line">{{ case.reg_no if case is defined else '' }}</span></td>
-    </tr>
-    <tr>
-      <td><b>Name of Person</b></td>
-      <td colspan="3">: <span class="addr-line">{{ case.caller_name if case is defined else '' }}</span></td>
-    </tr>
-    <tr>
-      <td><b>Organisation</b></td>
-      <td colspan="3">: <span class="addr-line">Edufun Foundation Trust</span></td>
-    </tr>
-    <tr>
-      <td><b>Contact No.</b></td>
-      <td colspan="3">: <span class="addr-line">{{ case.contact_no if case is defined else '' }}</span></td>
-    </tr>
-    <tr>
-      <td valign="top"><b>Address</b></td>
-      <td colspan="3">: <span class="addr-line">{{ address if address is defined else '' }}</span></td>
-    </tr>
-    <tr>
-      <td valign="top"><b>Cause</b></td>
-      <td colspan="3">: <span class="addr-line">{{ case.cause if case is defined else '' }}</span></td>
-    </tr>
-    {% if case is defined and case.discrimination %}
-    <tr>
-      <td valign="top"><b>Notes</b></td>
-      <td colspan="3">: <span class="addr-line">{{ case.discrimination }}</span></td>
-    </tr>
-    {% endif %}
-    {% if case is defined and case.contribution %}
-    <tr>
-      <td><b>Contribution</b></td>
-      <td colspan="3">: <span class="addr-line">{{ case.contribution }}</span></td>
-    </tr>
-    {% endif %}
-    <tr>
-      <td valign="top"><b>Entered By</b></td>
-      <td>: <span class="line">{{ case.last_edited_by if case is defined else '' }}</span></td>
-      <td><b>Post Time</b></td>
-      <td>: <span class="line">{{ case.post_time.slice(0, 16).replace('T',' ') if (case is defined and case.post_time) else '' }}</span></td>
-    </tr>
-  </table>
-
-  <!-- History / Description -->
-  <div style="margin-top:14px;font-size:15px;font-weight:bold;">History / Case Description</div>
-  <div style="border:1px solid black;min-height:65px;margin:5px 0 10px;padding:6px 8px;font-size:13px;font-family:'Times New Roman',serif;">
-    {{ case.discrimination if case is defined else '' }}
+  <div class="print-doc-title">
+    OFFICIAL VETERINARY ADMISSION &amp; MEDICAL TREATMENT RECORD
   </div>
 
-  <!-- Initial Treatment -->
-  {% if case is defined and case.treatment %}
-  <div style="font-size:14px;font-weight:bold;margin-bottom:4px;">Initial Treatment Given</div>
-  <div style="border:1px solid black;min-height:38px;padding:5px 8px;font-size:13px;margin-bottom:8px;font-family:'Times New Roman',serif;">
-    {{ case.treatment }}
+  <!-- Key Info Header Bar -->
+  <div class="case-meta-bar">
+    <div class="meta-item">
+      <span class="meta-label">Registration No.</span>
+      <span class="meta-val highlight">{{ case.reg_no if case is defined else '' }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Admission Date &amp; Time</span>
+      <span class="meta-val">{{ case.post_time.slice(0, 16).replace('T', ' ') if (case is defined and case.post_time) else 'N/A' }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Current Status</span>
+      <span class="meta-val badge">{{ case.status if case is defined else 'Under Treatment' }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Animal Classification</span>
+      <span class="meta-val">{{ case.animal_type if case is defined else '' }}</span>
+    </div>
   </div>
-  {% endif %}
 
-  <!-- Treatment Observation Table -->
-  <table class="treatment-table">
-    <thead>
-      <tr>
-        <th width="15%">Date</th>
-        <th width="45%">Observation</th>
-        <th width="40%">Treatment Given</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for i in range(12) %}
+  <!-- 2-Column Section Layout -->
+  <div class="case-grid">
+    <!-- Box 1: Patient Animal Identity -->
+    <div class="case-box">
+      <div class="box-header">🐾 Animal Patient Profile</div>
+      <table class="card-table">
+        <tr>
+          <th>Species:</th>
+          <td><strong>{{ case.species if case is defined else '' }}</strong></td>
+          <th>Gender / Sex:</th>
+          <td>{{ case.sex if case is defined else 'Unknown' }}</td>
+        </tr>
+        <tr>
+          <th>Type:</th>
+          <td>{{ case.animal_type if case is defined else '' }}</td>
+          <th>Contribution:</th>
+          <td>{{ ('₹' + case.contribution) if (case is defined and case.contribution) else 'None' }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Box 2: Rescuer & Location Information -->
+    <div class="case-box">
+      <div class="box-header">📞 Rescuer &amp; Location Details</div>
+      <table class="card-table">
+        <tr>
+          <th>Caller Name:</th>
+          <td><strong>{{ case.caller_name if case is defined else '' }}</strong></td>
+          <th>Contact No.:</th>
+          <td><strong>{{ case.contact_no if case is defined else '' }}</strong></td>
+        </tr>
+        <tr>
+          <th>Rescue Location:</th>
+          <td colspan="3">{{ address if address is defined else '' }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Box 3: Incident Cause & Observations -->
+  <div class="case-box full-width">
+    <div class="box-header">🩺 Incident Cause &amp; Clinical Description</div>
+    <div class="box-body">
+      <p><strong>Cause of Injury / Illness:</strong> {{ case.cause if case is defined else 'N/A' }}</p>
+      {% if case is defined and case.discrimination %}
+        <p><strong>Clinical Notes / Detailed Symptoms:</strong> {{ case.discrimination }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Box 4: Treatment Provided -->
+  <div class="case-box full-width">
+    <div class="box-header">💉 Veterinary Treatment Administered</div>
+    <div class="box-body treatment-box">
+      <p>{{ case.treatment if (case is defined and case.treatment) else 'First aid / wound dressing provided on admission.' }}</p>
+    </div>
+  </div>
+
+  <!-- Compact Follow-Up Clinical Observation Table (3 clean rows instead of 12) -->
+  <div class="case-box full-width">
+    <div class="box-header">📋 Follow-Up Clinical Progress &amp; Observations</div>
+    <table class="compact-obs-table">
+      <thead>
+        <tr>
+          <th style="width:18%;">Date &amp; Time</th>
+          <th style="width:47%;">Observation / Vitals</th>
+          <th style="width:35%;">Prescription / Treatment Given</th>
+        </tr>
+      </thead>
+      <tbody>
         <tr>
           <td>&nbsp;</td>
           <td>&nbsp;</td>
           <td>&nbsp;</td>
         </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        <tr>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Handler & Audit Stamp -->
+  <div class="case-footer-meta">
+    <span><strong>Attending Staff / Logged By:</strong> {{ case.last_edited_by if (case is defined and case.last_edited_by) else 'JVD Staff' }}</span>
+    <span><strong>Verification:</strong> Edufun Foundation Trust Official Clinical Record</span>
+  </div>
 
   <!-- Signatures -->
   <div class="sign-row">
-    <div>
-      Prepared By<br/><br/><br/>
-      _____________________
+    <div class="sign-block">
+      <div class="sign-line"></div>
+      <strong>Prepared By (Staff)</strong>
     </div>
-    <div>
-      Doctor's Signature<br/><br/><br/>
-      _____________________
+    <div class="sign-block">
+      <div class="sign-line"></div>
+      <strong>Attending Veterinarian</strong>
     </div>
-    <div>
-      Authorized Sign<br/><br/><br/>
-      _____________________
+    <div class="sign-block">
+      <div class="sign-line"></div>
+      <strong>Authorized Signatory (JVD)</strong>
     </div>
   </div>
 
   <!-- Paper Footer -->
   <div class="paper-footer">
-    EDUFUN FOUNDATION TRUST &bull; JIVDAYA VATSALYA DHAM &bull;
-    NH-168, Dhanera &bull; 97272-97187 &bull; info@edufunfoundation.in
+    EDUFUN FOUNDATION TRUST &bull; JIVDAYA VATSALYA DHAM VETERINARY CARE &bull; NH-168, DHANERA &bull; HELPLINE: 97272-97187
   </div>
 
 </div>

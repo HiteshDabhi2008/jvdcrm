@@ -82,6 +82,13 @@ function initPassport() {
                         last_login: new Date()
                     });
                     await user.save();
+
+                    await recordAudit({
+                        actor: user,
+                        action: 'USER_REGISTRATION',
+                        target: user.email,
+                        details: `Staff member onboarded via Google Workspace (@${ALLOWED_DOMAIN}) with initial role "${assignedRole}"`
+                    });
                 } else {
                     user.googleId = profile.id;
                     if (profile.displayName) user.full_name = profile.displayName;
@@ -111,71 +118,11 @@ function initPassport() {
     });
 }
 
-// Local Register Handler
+// Compulsory Google Workspace Registration Handler
 async function registerUser(req, res, next) {
     try {
-        const { full_name, username, email, password, confirm_password } = req.body;
-
-        if (!full_name || !username || !password || !confirm_password) {
-            req.flash('error', '⚠️ All required registration fields must be filled.');
-            return res.redirect('/register');
-        }
-
-        if (password !== confirm_password) {
-            req.flash('error', '⛔ Passwords do not match.');
-            return res.redirect('/register');
-        }
-
-        if (password.length < 6) {
-            req.flash('error', '⚠️ Password must be at least 6 characters long.');
-            return res.redirect('/register');
-        }
-
-        const cleanUsername = username.trim().toLowerCase();
-        const existing = await User.findOne({ username: cleanUsername });
-        if (existing) {
-            req.flash('error', '⛔ Username already exists. Please choose a different one.');
-            return res.redirect('/register');
-        }
-
-        const cleanEmail = email ? email.trim().toLowerCase() : undefined;
-        if (cleanEmail) {
-            const existingEmail = await User.findOne({ email: cleanEmail });
-            if (existingEmail) {
-                req.flash('error', '⛔ An account with this email already exists.');
-                return res.redirect('/register');
-            }
-        }
-
-        // Secure Role Assignment:
-        // Do NOT allow user to specify 'head' arbitrarily.
-        // First user or matching HEAD_ADMIN_EMAIL gets head, all others employee.
-        const userCount = await User.countDocuments({});
-        const isHeadAdmin = (cleanEmail && cleanEmail === HEAD_ADMIN_EMAIL) || (userCount === 0);
-        const role = isHeadAdmin ? 'head' : 'employee';
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({
-            full_name: full_name.trim(),
-            username: cleanUsername,
-            email: cleanEmail,
-            role,
-            status: 'active',
-            password: hashedPassword
-        });
-
-        await newUser.save();
-
-        await recordAudit({
-            req,
-            action: 'USER_CREATE',
-            targetType: 'USER',
-            targetId: newUser.username,
-            details: { role: newUser.role, full_name: newUser.full_name }
-        });
-
-        req.flash('success', `✅ Account created successfully as ${role.toUpperCase()}. Please sign in.`);
-        res.redirect('/login');
+        req.flash('error', `⛔ Manual registration is disabled. Staff registration is compulsory through Google Workspace (@${ALLOWED_DOMAIN}). Please click "Register & Onboard with Google (@${ALLOWED_DOMAIN})".`);
+        return res.redirect('/register');
     } catch (err) {
         next(err);
     }

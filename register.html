@@ -44,70 +44,56 @@
 
 <!-- ════ AUTH WRAPPER ════ -->
 <div class="auth-wrap">
-  <div class="auth-card">
+  <div class="auth-card" style="max-width:520px;">
 
     <div class="auth-logo">
       <img src="{{ url_for('static', filename='JVD_logo.jpeg') }}" onerror="this.onerror=null;this.src='JVD_logo.jpeg';" alt="JVD Logo"/>
-      <h2>Create Staff Account</h2>
-      <p>Register to access the JVD Veterinary Case System</p>
+      <h2>Staff Registration &amp; Onboarding</h2>
+      <p>Jivdaya Vatsalya Dham &bull; Edufun Foundation Trust</p>
     </div>
 
-    <!-- Google Sign-Up with organization restriction -->
-    <div style="text-align:center;margin-bottom:6px;">
-      <div class="domain-badge">🔒 @{{ allowed_domain or 'edufunfoundation.in' }} accounts get instant access</div>
+    <!-- Compulsory Google Authentication Banner -->
+    <div style="text-align:center;margin:12px 0 18px;">
+      <div class="domain-badge" style="font-size:0.92rem;padding:8px 16px;background:rgba(22,61,46,0.08);border:1px solid var(--green-700);color:var(--green-900);border-radius:24px;display:inline-block;font-weight:600;">
+        🔒 Compulsory: Official @{{ allowed_domain or 'edufunfoundation.in' }} Accounts Only
+      </div>
     </div>
-    <a href="{{ url_for('google.login') if url_for is defined else '/auth/google' }}" class="btn-google" id="googleBtn">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
-      Register with Google (@{{ allowed_domain or 'edufunfoundation.in' }})
+
+    <!-- Prominent Google Onboarding Button -->
+    <a href="{{ url_for('google.login') if url_for is defined else '/auth/google' }}" class="btn-google" id="googleBtn" style="padding:14px 18px;font-size:1rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;border:2px solid var(--green-700);border-radius:var(--radius-sm);background:#ffffff;color:var(--text-900);text-decoration:none;box-shadow:var(--shadow-sm);transition:all 0.2s ease;">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:24px;height:24px;"/>
+      Register &amp; Onboard with Google (@{{ allowed_domain or 'edufunfoundation.in' }})
     </a>
 
-    <div class="or-divider">or register with staff credentials</div>
+    <!-- Onboarding Information & Policy Guidelines -->
+    <div style="margin-top:24px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px 20px;text-align:left;">
+      <h4 style="font-size:0.92rem;font-weight:700;color:var(--text-900);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+        📋 Registration Policy &amp; Account Setup
+      </h4>
+      <ul style="font-size:0.86rem;color:var(--text-700);line-height:1.7;padding-left:18px;margin:0;">
+        <li style="margin-bottom:8px;">
+          <strong>Compulsory Domain Restriction:</strong> Registration is restricted exclusively to authorized staff emails ending with <code>@{{ allowed_domain or 'edufunfoundation.in' }}</code>. Personal Gmail or external email domains are strictly barred.
+        </li>
+        <li style="margin-bottom:8px;">
+          <strong>Instant Staff Provisioning:</strong> Authenticating with your organization Google Workspace account automatically creates your verified veterinary care profile.
+        </li>
+        <li style="margin-bottom:8px;">
+          <strong>Default Role:</strong> New staff members are safely initialized with the <strong>Care Employee</strong> role to register admissions, update cases, and search records.
+        </li>
+        <li>
+          <strong>Head Privileges:</strong> Supervisory permissions (audit log access, exports, and staff management) are granted by the trust administration via the Administration portal.
+        </li>
+      </ul>
+    </div>
 
-    <!-- Registration Form -->
-    <form method="POST" action="{{ url_for('register') if url_for is defined else '/register' }}" id="registerForm">
-      <div class="form-group">
-        <label class="form-label" for="full_name">Staff Full Name <span class="req">*</span></label>
-        <input class="form-control" type="text" id="full_name" name="full_name"
-               placeholder="Enter your full name (e.g. Dr. Rajesh Patel)" required/>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="username">Staff Username <span class="req">*</span></label>
-        <input class="form-control" type="text" id="username" name="username"
-               placeholder="Choose a unique username" autocomplete="username" required/>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="email">Official Email (optional)</label>
-        <input class="form-control" type="email" id="email" name="email"
-               placeholder="staff@{{ allowed_domain or 'edufunfoundation.in' }}"/>
-        <div class="form-helper">Used for account recovery and official communications</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Initial Assigned Role</label>
-        <div style="background:var(--bg-subtle);padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);font-size:0.86rem;color:var(--text-700);">
-          👷 <strong>Care Employee</strong> <span style="color:var(--text-400);">(Standard staff role. Head privileges granted by administration)</span>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" for="password">Password <span class="req">*</span></label>
-          <input class="form-control" type="password" id="password" name="password"
-                 placeholder="Min 6 characters" autocomplete="new-password" minlength="6" required/>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="confirm_password">Confirm Password <span class="req">*</span></label>
-          <input class="form-control" type="password" id="confirm_password" name="confirm_password"
-                 placeholder="Repeat password" autocomplete="new-password" minlength="6" required/>
-        </div>
-      </div>
-      <div id="pwMismatch" class="hidden" style="color:var(--red);font-size:0.84rem;margin-bottom:10px;font-weight:600;">
-        ⛔ Passwords do not match.
-      </div>
-      <button class="btn btn-primary btn-full btn-lg" type="submit" id="submitBtn" style="margin-top:6px;">Create Staff Account →</button>
-    </form>
+    <!-- Help & Assistance Notice -->
+    <div style="margin-top:20px;padding:12px 14px;background:rgba(245,158,11,0.08);border-left:3px solid var(--amber-500);border-radius:var(--radius-xs);font-size:0.84rem;color:var(--text-700);text-align:left;">
+      ℹ️ <strong>Need an official account?</strong> If you do not yet have an assigned <code>@{{ allowed_domain or 'edufunfoundation.in' }}</code> account, please contact hospital IT administration at <a href="mailto:info@edufunfoundation.in" style="color:var(--green-700);font-weight:600;">info@edufunfoundation.in</a> or call <strong>97272-97187</strong>.
+    </div>
 
     <div class="auth-divider"></div>
     <div class="auth-switch">
-      Already have an account? <a href="{{ url_for('login') if url_for is defined else 'login.html' }}">Sign in here</a>
+      Already registered? <a href="{{ url_for('login') if url_for is defined else 'login.html' }}">Sign in to your account here &rarr;</a>
     </div>
 
   </div>
@@ -128,34 +114,9 @@
 const googleBtn = document.getElementById('googleBtn');
 if (googleBtn) {
   googleBtn.addEventListener('click', function() {
-    this.innerHTML = '<span class="spinner-inline"></span> Connecting to Google...';
+    this.innerHTML = '<span class="spinner-inline"></span> Connecting to Google Workspace...';
   });
 }
-
-const regForm = document.getElementById('registerForm');
-const pw = document.getElementById('password');
-const cpw = document.getElementById('confirm_password');
-const mismatch = document.getElementById('pwMismatch');
-
-cpw.addEventListener('input', () => {
-  if (pw.value && cpw.value && pw.value !== cpw.value) {
-    mismatch.classList.remove('hidden');
-  } else {
-    mismatch.classList.add('hidden');
-  }
-});
-
-regForm.addEventListener('submit', (e) => {
-  if (pw.value !== cpw.value) {
-    e.preventDefault();
-    mismatch.classList.remove('hidden');
-    cpw.focus();
-    return;
-  }
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-inline"></span> Creating Account...';
-});
 </script>
 
 </body>
